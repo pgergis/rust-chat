@@ -6,6 +6,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "byteorder"
 version = "1.2.7"
+source = "git+https://github.com/BurntSushi/byteorder#803136cc2719cc4a5baf562877e01938267a6bd9"
+
+[[package]]
+name = "byteorder"
+version = "1.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -22,6 +27,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "chat"
 version = "0.1.0"
 dependencies = [
+ "byteorder 1.2.7 (git+https://github.com/BurntSushi/byteorder)",
  "http-muncher 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "mio 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -191,6 +197,7 @@ dependencies = [
 
 [metadata]
 "checksum bitflags 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "8dead7461c1127cf637931a1e50934eb6eee8bff2f74433ac7909e9afcee04a3"
+"checksum byteorder 1.2.7 (git+https://github.com/BurntSushi/byteorder)" = "<none>"
 "checksum byteorder 1.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "94f88df23a25417badc922ab0f5716cc1330e87f71ddd9203b3a3ccd9cedf75d"
 "checksum bytes 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c129aff112dcc562970abb69e2508b40850dd24c274761bb50fb8a0067ba6c27"
 "checksum cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "082bb9b28e00d3c9d39cc03e64ce4cea0f1bb9b3fde493f0cbc008472d22bdf4"

@@ -15,6 +15,8 @@ use mio::tcp::*;
 
 use rustc_serialize::base64::{ToBase64, STANDARD};
 
+mod frame;
+
 fn gen_key(key: &String) -> String {
     let mut m = sha1::Sha1::new();
     let mut buf = [0u8; 20];
@@ -86,6 +88,13 @@ impl WebSocketClient {
             ClientState::AwaitingHandshake(_) => {
                 self.read_handshake();
             },
+            ClientState::Connected => {
+                let frame = frame::WebSocketFrame::read(&mut self.socket);
+                match frame {
+                    Ok(frame) => println!("{:?}", frame),
+                    Err(e) => println!("error while reading frame: {}", e)
+                }
+            }
             _ => {}
         }
     }
