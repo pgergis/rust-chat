@@ -1,0 +1,10 @@
+[package]
+name = "chat"
+version = "0.1.0"
+authors = ["Pierre Gergis <pierre.s.gergis@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+mio = "0.5"
+# mio = { git = "https://github.com/carllerche/mio" }
+http-muncher = "0.2.0"
