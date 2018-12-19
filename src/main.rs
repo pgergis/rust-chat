@@ -50,16 +50,14 @@ impl ParserHandler for HttpParser {
     }
 }
 
-#[derive(PartialEq)]
 enum ClientState {
-    AwaitingHandshake,
+    AwaitingHandshake(RefCell<Parser<HttpParser>>),
     HandshakeResponse,
     Connected
 }
 
 struct WebSocketClient {
     socket: TcpStream,
-    http_parser: Parser<HttpParser>,
     headers: Rc<RefCell<HashMap<String, String>>>,
     interest: EventSet,
     state: ClientState
@@ -74,19 +72,25 @@ impl WebSocketClient {
             // need an initial clone of 'headers' to read its contents
             // (it's being shared with HttpParser)
             headers: headers.clone(),
-
-            http_parser: Parser::request(HttpParser {
+            interest: EventSet::readable(),
+            state: ClientState::AwaitingHandshake(RefCell::new(Parser::request(HttpParser {
                 current_key: None,
                 // the second clone to let the parser write to headers
                 headers: headers.clone()
-            }),
-
-            interest: EventSet::readable(),
-            state: ClientState::AwaitingHandshake
+            })))
         }
     }
 
     fn read(&mut self) {
+        match self.state {
+            ClientState::AwaitingHandshake(_) => {
+                self.read_handshake();
+            },
+            _ => {}
+        }
+    }
+
+    fn read_handshake(&mut self) {
         loop {
             let mut buf = [0; 2048];
             match self.socket.try_read(&mut buf) {
@@ -95,11 +99,17 @@ impl WebSocketClient {
                     return
                 },
                 Ok(None) =>
-                    // Socket buffer has got no more bytes.
+                // Socket buffer has got no more bytes.
                     break,
-                Ok(Some(len)) => {
-                    self.http_parser.parse(&buf[0..len]);
-                    if self.http_parser.is_upgrade() {
+                Ok(Some(_len)) => {
+                    let is_upgrade = if let ClientState::AwaitingHandshake(ref parser_state) = self.state {
+                        let mut parser = parser_state.borrow_mut();
+                        // parser.parse(&buf[0..len]);
+                        parser.parse(&buf);
+                        parser.is_upgrade()
+                    } else { false };
+
+                    if is_upgrade {
                         self.state = ClientState::HandshakeResponse;
                         self.interest.remove(EventSet::readable());
                         self.interest.insert(EventSet::writable());
