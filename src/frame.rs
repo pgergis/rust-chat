@@ -8,7 +8,6 @@ const PAYLOAD_LEN_U16: u8 = 126;
 const PAYLOAD_LEN_U64: u8 = 127;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-#[allow(dead_code)]
 pub enum OpCode {
     TextFrame = 1,
     BinaryFrame = 2,
@@ -115,8 +114,35 @@ impl WebSocketFrame {
         Ok(())
     }
 
+    pub fn pong(ping_frame: &WebSocketFrame) -> WebSocketFrame {
+        let payload = ping_frame.payload.clone();
+        WebSocketFrame {
+            header: WebSocketFrameHeader::new_header(payload.len(), OpCode::Pong),
+            payload: payload,
+            mask: None
+        }
+    }
 
-    #[allow(dead_code)]
+    pub fn close_from(recv_frame: &WebSocketFrame) -> WebSocketFrame {
+        let body = if recv_frame.payload.len() > 0 {
+            let status_code = &recv_frame.payload[0..2];
+            let mut body = Vec::with_capacity(2);
+            body.write(status_code).unwrap(); // Vec size / payload is fixed to always 2, per spec
+            body
+        } else {
+            Vec::new()
+        };
+        WebSocketFrame {
+            header: WebSocketFrameHeader::new_header(body.len(), OpCode::ConnectionClose),
+            payload: body,
+            mask: None
+        }
+    }
+
+    pub fn is_close(&self) -> bool {
+        self.header.opcode == OpCode::ConnectionClose
+    }
+
     pub fn get_opcode(&self) -> OpCode {
         self.header.opcode.clone()
     }

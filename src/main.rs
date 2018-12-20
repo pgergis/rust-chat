@@ -1,3 +1,6 @@
+// TODO: refactor to use rust states
+// TODO: get working with latest version of mio
+
 extern crate http_muncher;
 extern crate mio;
 extern crate rustc_serialize;
@@ -85,29 +88,13 @@ impl WebSocketClient {
         }
     }
 
-    fn read(&mut self) {
+    pub fn read(&mut self) {
         match self.state {
             ClientState::AwaitingHandshake(_) => {
                 self.read_handshake();
             },
             ClientState::Connected => {
-                let frame = frame::WebSocketFrame::read(&mut self.socket);
-                match frame {
-                    Ok(frame) => {
-                        println!("{:?}", frame);
-
-                        // add a reply frame to the queue:
-                        let reply_frame = frame::WebSocketFrame::from("Hi there!");
-                        self.outgoing.push(reply_frame);
-
-                        // switch the event subscription to the write mode if the queue is not empty:
-                        if self.outgoing.len() > 0 {
-                            self.interest.remove(EventSet::readable());
-                            self.interest.insert(EventSet::writable());
-                        }
-                    },
-                    Err(e) => println!("error while reading frame: {}", e)
-                }
+                self.read_frame();
             }
             _ => {}
         }
@@ -144,18 +131,61 @@ impl WebSocketClient {
         }
     }
 
+    fn read_frame(&mut self) {
+        let frame = frame::WebSocketFrame::read(&mut self.socket);
+        match frame {
+            Ok(frame) => {
+                match frame.get_opcode() {
+                    frame::OpCode::TextFrame  => {
+                        println!("{:?}", frame);
+
+                        // add a reply frame to the queue:
+                        let reply_frame = frame::WebSocketFrame::from("Hi there!");
+                        self.outgoing.push(reply_frame);
+
+                    },
+                    frame::OpCode::Ping => {
+                        println!("ping/pong");
+                        self.outgoing.push(frame::WebSocketFrame::pong(&frame));
+                    },
+                    frame::OpCode::ConnectionClose => {
+                        self.outgoing.push(frame::WebSocketFrame::close_from(&frame));
+                    }
+                    _ => {}
+                }
+
+                self.interest.remove(EventSet::readable());
+                self.interest.insert(EventSet::writable());
+            },
+            Err(e) => println!("error while reading frame: {}", e)
+        }
+    }
+
     fn write(&mut self) {
         match self.state {
             ClientState::HandshakeResponse => {
                 self.write_handshake();
             },
             ClientState::Connected => {
-                println!("sending {} frames", self.outgoing.len());
+                let mut close_connection = false;
 
                 for frame in self.outgoing.iter() {
                     if let Err(e) = frame.write(&mut self.socket) {
                         println!("error on write: {}", e);
                     }
+
+                    if frame.is_close() {
+                        close_connection = true;
+                    }
+                }
+
+                self.outgoing.clear();
+
+                self.interest.remove(EventSet::writable());
+                if close_connection {
+                    self.interest.insert(EventSet::hup());
+                } else {
+                    self.interest.insert(EventSet::readable());
                 }
             }
             _ => {}
@@ -228,6 +258,13 @@ impl Handler for WebSocketServer {
             client.write();
             event_loop.reregister(&client.socket, token, client.interest,
                                   PollOpt::edge() | PollOpt::oneshot()).unwrap();
+        }
+
+        if events.is_hup() {
+            let client = self.clients.remove(&token).unwrap();
+
+            client.socket.shutdown(Shutdown::Both).unwrap();
+            event_loop.deregister(&client.socket).unwrap();
         }
     }
 }
