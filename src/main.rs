@@ -1,6 +1,3 @@
-// TODO: refactor to use rust states
-// TODO: get working with latest version of mio
-
 extern crate http_muncher;
 extern crate mio;
 extern crate rustc_serialize;
@@ -157,7 +154,7 @@ impl WebSocketClient {
                 self.interest.remove(EventSet::readable());
                 self.interest.insert(EventSet::writable());
             },
-            Err(e) => println!("error while reading frame: {}", e)
+            Err(e) => println!("Error while reading frame: {}", e)
         }
     }
 
@@ -171,7 +168,7 @@ impl WebSocketClient {
 
                 for frame in self.outgoing.iter() {
                     if let Err(e) = frame.write(&mut self.socket) {
-                        println!("error on write: {}", e);
+                        println!("Error on write: {}", e);
                     }
 
                     if frame.is_close() {
