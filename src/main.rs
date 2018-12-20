@@ -62,7 +62,8 @@ struct WebSocketClient {
     socket: TcpStream,
     headers: Rc<RefCell<HashMap<String, String>>>,
     interest: EventSet,
-    state: ClientState
+    state: ClientState,
+    outgoing: Vec<frame::WebSocketFrame>
 }
 
 impl WebSocketClient {
@@ -79,7 +80,8 @@ impl WebSocketClient {
                 current_key: None,
                 // the second clone to let the parser write to headers
                 headers: headers.clone()
-            })))
+            }))),
+            outgoing: Vec::new()
         }
     }
 
@@ -91,7 +93,19 @@ impl WebSocketClient {
             ClientState::Connected => {
                 let frame = frame::WebSocketFrame::read(&mut self.socket);
                 match frame {
-                    Ok(frame) => println!("{:?}", frame),
+                    Ok(frame) => {
+                        println!("{:?}", frame);
+
+                        // add a reply frame to the queue:
+                        let reply_frame = frame::WebSocketFrame::from("Hi there!");
+                        self.outgoing.push(reply_frame);
+
+                        // switch the event subscription to the write mode if the queue is not empty:
+                        if self.outgoing.len() > 0 {
+                            self.interest.remove(EventSet::readable());
+                            self.interest.insert(EventSet::writable());
+                        }
+                    },
                     Err(e) => println!("error while reading frame: {}", e)
                 }
             }
@@ -131,6 +145,24 @@ impl WebSocketClient {
     }
 
     fn write(&mut self) {
+        match self.state {
+            ClientState::HandshakeResponse => {
+                self.write_handshake();
+            },
+            ClientState::Connected => {
+                println!("sending {} frames", self.outgoing.len());
+
+                for frame in self.outgoing.iter() {
+                    if let Err(e) = frame.write(&mut self.socket) {
+                        println!("error on write: {}", e);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn write_handshake(&mut self) {
         let headers = self.headers.borrow();
         let response_key = gen_key(&headers.get("Sec-WebSocket-Key").unwrap());
 
