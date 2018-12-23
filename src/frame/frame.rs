@@ -29,7 +29,7 @@ impl OpCode {
 }
 
 #[derive(Debug)]
-pub struct WebSocketFrameHeader {
+struct WebSocketFrameHeader {
     fin: bool,
     rsv1: bool,
     rsv2: bool,
