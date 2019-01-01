@@ -1,13 +1,12 @@
-mod server { pub mod server; }
-mod client { pub mod client; }
-mod frame  { pub mod frame;  }
+mod server;
+mod client;
 
 use std::net::SocketAddr;
 
 use mio::*;
 use mio::tcp::*;
 
-use crate::server::server::WebSocketServer;
+use crate::server::WebSocketServer;
 
 fn main() {
     let mut event_loop = EventLoop::new().unwrap();

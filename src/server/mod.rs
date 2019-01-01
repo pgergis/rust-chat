@@ -8,8 +8,7 @@ use std::collections::HashMap;
 use mio::*;
 use mio::tcp::*;
 
-
-use crate::client::client::WebSocketClient;
+use crate::client::WebSocketClient;
 
 pub struct WebSocketServer {
     pub socket: TcpListener,

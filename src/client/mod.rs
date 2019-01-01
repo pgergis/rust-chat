@@ -14,7 +14,8 @@ use mio::tcp::*;
 
 use rustc_serialize::base64::{ToBase64, STANDARD};
 
-use crate::frame::frame::{WebSocketFrame, OpCode};
+mod frame;
+use crate::client::frame::{WebSocketFrame, OpCode};
 
 fn gen_key(key: &String) -> String {
     let mut m = sha1::Sha1::new();
