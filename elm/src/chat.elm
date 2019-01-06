@@ -4,7 +4,6 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import List
 
 -- JavaScript usage: app.ports.websocketIn.send(response);
 port websocketIn : (String -> msg) -> Sub msg
@@ -99,7 +98,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ h3 [] [ text "Awesome Chat Room" ]
+        [ h3 [] [ text "Rusty Chat Room" ]
         , viewSelect model
         ]
 
@@ -115,7 +114,7 @@ viewSelect model =
 enterNameView : Model -> Html Msg
 enterNameView model =
     div []
-        [ label [] [ text "Enter your username for this chat" ]
+        [ label [] [ text "Enter your username for this chat: " ]
         , input
             [ autofocus True
             , value model.username

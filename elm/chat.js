@@ -5087,7 +5087,7 @@ var author$project$Main$enterNameView = function (model) {
 				_List_Nil,
 				_List_fromArray(
 					[
-						elm$html$Html$text('Enter your username for this chat')
+						elm$html$Html$text('Enter your username for this chat: ')
 					])),
 				A2(
 				elm$html$Html$input,
@@ -5131,7 +5131,7 @@ var author$project$Main$view = function (model) {
 				_List_Nil,
 				_List_fromArray(
 					[
-						elm$html$Html$text('Awesome Chat Room')
+						elm$html$Html$text('Rusty Chat Room')
 					])),
 				author$project$Main$viewSelect(model)
 			]));

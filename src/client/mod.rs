@@ -1,21 +1,22 @@
-extern crate http_muncher;
 extern crate mio;
 extern crate rustc_serialize;
 extern crate sha1;
+mod frame;
+mod http_parser;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use http_muncher::{Parser, ParserHandler};
+use http_muncher::{Parser};
 
 use mio::*;
 use mio::tcp::*;
 
 use rustc_serialize::base64::{ToBase64, STANDARD};
 
-mod frame;
 use crate::client::frame::{WebSocketFrame, OpCode};
+use crate::client::http_parser::{HttpParser};
 
 fn gen_key(key: &String) -> String {
     let mut m = sha1::Sha1::new();
@@ -27,29 +28,6 @@ fn gen_key(key: &String) -> String {
     m.output(&mut buf);
 
     return buf.to_base64(STANDARD);
-}
-
-struct HttpParser {
-    current_key: Option<String>,
-    headers: Rc<RefCell<HashMap<String, String>>>
-}
-
-impl ParserHandler for HttpParser {
-    fn on_header_field(&mut self, s: &[u8]) -> bool {
-        self.current_key = Some(std::str::from_utf8(s).unwrap().to_string());
-        true
-    }
-
-    fn on_header_value(&mut self, s: &[u8]) -> bool {
-        self.headers.borrow_mut()
-            .insert(self.current_key.clone().unwrap(),
-                    std::str::from_utf8(s).unwrap().to_string());
-        true
-    }
-
-    fn on_headers_complete(&mut self) -> bool {
-        false
-    }
 }
 
 enum ClientState {
@@ -136,7 +114,8 @@ impl WebSocketClient {
                         println!("{:?}", frame);
 
                         // add a reply frame to the queue:
-                        let reply_frame = WebSocketFrame::from("<server> ack!");
+                        let s: String = String::from_utf8(frame.payload).unwrap();
+                        let reply_frame = WebSocketFrame::from(s.as_str());
                         self.outgoing.push(reply_frame);
 
                     },

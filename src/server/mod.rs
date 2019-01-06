@@ -49,16 +49,20 @@ impl Handler for WebSocketServer {
 
                     let new_token = Token(self.token_counter);
                     self.clients.insert(new_token, WebSocketClient::new(client_socket));
-                    self.token_counter += 1;
 
                     event_loop.register(&self.clients[&new_token].socket,
                                         new_token, EventSet::readable(),
                                         PollOpt::edge() | PollOpt::oneshot()).unwrap();
+
                     println!("Added a new client, with token counter: {}", self.token_counter);
+
+                    self.token_counter += 1;
+
                 },
                 token => {
                     let client = self.clients.get_mut(&token).unwrap();
                     client.read();
+                    println!("Read from client: {}", token.as_usize());
                     event_loop.reregister(&client.socket, token, client.interest,
                                         PollOpt::edge() | PollOpt::oneshot()).unwrap();
                 }
@@ -68,6 +72,7 @@ impl Handler for WebSocketServer {
         if events.is_writable() {
             let client = self.clients.get_mut(&token).unwrap();
             client.write();
+            println!("Write from client: {}", token.as_usize());
             event_loop.reregister(&client.socket, token, client.interest,
                                   PollOpt::edge() | PollOpt::oneshot()).unwrap();
         }
