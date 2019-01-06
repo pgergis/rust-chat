@@ -3,6 +3,7 @@
 A basic WebSocket library, tested with client-server frame passing.
 
 Based on the tutorial found here: http://nbaksalyar.github.io/2015/07/10/writing-chat-in-rust.html
+
 Front end heavily based on: https://github.com/martimatix/crystal-elm-chat
 
 ## Usage
