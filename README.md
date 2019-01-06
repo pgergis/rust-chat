@@ -6,11 +6,12 @@ Based on the tutorial found here: http://nbaksalyar.github.io/2015/07/10/writing
 Front end heavily based on: https://github.com/martimatix/crystal-elm-chat
 
 ## Usage
-(All commands from main directory)
-If you modify elm/src/chat.elm, recompile with `elm make elm/src/chat.elm --output=chat.js`
-Run WebSocket server with `cargo run`
-Run web server with `elm reactor`
-Navigate to http://localhost:8000/elm/chat.html
+* If you modify elm/src/chat.elm, recompile with `elm make elm/src/chat.elm --output=chat.js`
+1. Run WebSocket server with `cargo run`
+2. Run web server with `elm reactor`
+3. Navigate to http://localhost:8000/elm/chat.html
+
+** All commands from main directory
 
 TODOs:
 - [DONE] Refactor into smaller modules (client, server, etc.)
