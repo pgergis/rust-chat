@@ -10,7 +10,8 @@
         <div id="elm-node"></div>
         <script>
          const app = Elm.Main.init({node: document.getElementById("elm-node")});
-         const socket = new WebSocket("ws://localhost:10000");
+         const wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')+window.location.host + '/ws/';
+         const socket = new WebSocket(wsUri);
          /* const socket = new WebSocket("ws://echo.websocket.org"); */
 
          // Listen for messages

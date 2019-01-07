@@ -5,9 +5,7 @@ authors = ["Pierre Gergis <pierre.s.gergis@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-byteorder = { git = "https://github.com/BurntSushi/byteorder" }
-mio = "0.5"
-# mio = { git = "https://github.com/carllerche/mio" }
-http-muncher = "0.2.0"
-rustc-serialize = "0.3.15"
-sha1 = "0.1.1"
+actix = "0.7"
+actix-web = "0.7"
+futures = "0.1"
+rand = "0.6"
