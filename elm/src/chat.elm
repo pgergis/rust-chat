@@ -10,6 +10,8 @@ port websocketIn : (String -> msg) -> Sub msg
 -- JavaScript usage: app.ports.websocketOut.subscribe(handler);
 port websocketOut : String -> Cmd msg
 
+port connectWc : String -> Cmd msg
+
 main =
     Browser.element
         { init = init
@@ -47,7 +49,8 @@ type Msg
     | UpdateUserMessage String
     | NewChatMessage String
     | UpdateUsername String
-    | SelectUsername
+    | UserRegister
+    | GuestRegister
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -63,7 +66,7 @@ update msg model =
 
             in
                 ( { model | userMessage = "" }
-                , Cmd.batch [ submitChatMessage username message ]
+                , submitChatMessage message
                 )
 
         UpdateUserMessage message ->
@@ -85,9 +88,14 @@ update msg model =
             , Cmd.none
             )
 
-        SelectUsername ->
+        UserRegister ->
             ( { model | usernameSelected = True }
-            , Cmd.none
+            , initRegisteredConnection model.username
+            )
+
+        GuestRegister ->
+            ( { model | usernameSelected = True }
+            , initGuestConnection
             )
 
 
@@ -124,10 +132,17 @@ enterNameView model =
             ]
             []
         , button
-            [ onClick SelectUsername
+            [ onClick UserRegister
             , class "button-primary"
             ]
-            [ text "Submit" ]
+            [ text "Register" ]
+        , div [] []
+        , label [] [text "Or you can: "]
+        , button
+            [ onClick GuestRegister
+            , class "button-primary"
+            ]
+            [ text "Connect as Guest" ]
         ]
 
 
@@ -170,6 +185,12 @@ subscriptions model =
 -- HELPERS
 
 
-submitChatMessage : String -> String -> Cmd Msg
-submitChatMessage username message =
-    websocketOut (username ++ ": " ++ message)
+submitChatMessage : String -> Cmd Msg
+submitChatMessage message =
+    websocketOut message
+
+initGuestConnection : Cmd Msg
+initGuestConnection = connectWc "/guest"
+
+initRegisteredConnection : String -> Cmd Msg
+initRegisteredConnection requestedUsername = connectWc (String.append "/register?req_handle=" requestedUsername)

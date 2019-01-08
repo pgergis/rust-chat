@@ -10,22 +10,31 @@
         <div id="elm-node"></div>
         <script>
          const app = Elm.Main.init({node: document.getElementById("elm-node")});
-         const wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')+window.location.host + '/ws/';
-         const socket = new WebSocket(wsUri);
-         /* const socket = new WebSocket("ws://echo.websocket.org"); */
 
-         // Listen for messages
-         socket.addEventListener('message', function (event) {
-             app.ports.websocketIn.send(JSON.stringify({data:message.data,timeStamp:message.timeStamp}));
-         });
+         // client is responsible for listening for failed connection and retrying accordingly
+         app.ports.connectWc.subscribe(function(extension) {
+             // extension '/guest' means guest connection
+             // extension '/register?req_handle=<username>' tries to get that username
+             const wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')
+                         + window.location.host
+                         + extension;
+             console.log("connecting to " + wsUri);
+             const socket = new WebSocket(wsUri);
 
-         // Listen for server responses
-         socket.onmessage = function(message) {
-             console.log(message);
-             app.ports.websocketIn.send(JSON.stringify({data:message.data,timeStamp:message.timeStamp}));
-         };
+             // Listen for messages
+             socket.addEventListener('message', function (event) {
+                 app.ports.websocketIn.send(JSON.stringify({data:message.data,timeStamp:message.timeStamp}));
+             });
 
-         app.ports.websocketOut.subscribe(function(msg) { socket.send(msg); });
+             // Listen for server responses
+             socket.onmessage = function(message) {
+                 console.log(message);
+                 app.ports.websocketIn.send(JSON.stringify({data:message.data,timeStamp:message.timeStamp}));
+             };
+
+             app.ports.websocketOut.subscribe(function(msg) { socket.send(msg); });
+         })
+
         </script>
     </body>
 </html>

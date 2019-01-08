@@ -50,9 +50,6 @@ impl Handler<Connect> for ChatServ {
     type Result = Result<(usize, String), std::io::Error>;
 
     fn handle(&mut self, message: Connect, _: &mut Context<Self>) -> Result<(usize, String), std::io::Error> {
-        println!("Someone connected!");
-        self.send_message("Someone connected!", 0);
-
         let id = self.rand_gen.gen::<usize>();
         self.sessions.insert(id, message.address);
 
@@ -61,6 +58,9 @@ impl Handler<Connect> for ChatServ {
             _ => self.gen_random_handle()
         };
         self.usernames.insert(id, handle.clone());
+
+        let mes = format!("{} connected!", handle);
+        self.send_message(&mes, 0);
 
         return Ok((id, handle))
     }

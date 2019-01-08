@@ -4805,11 +4805,17 @@ var author$project$Main$subscriptions = function (model) {
 	return author$project$Main$websocketIn(author$project$Main$NewChatMessage);
 };
 var elm$json$Json$Encode$string = _Json_wrap;
+var author$project$Main$connectWc = _Platform_outgoingPort('connectWc', elm$json$Json$Encode$string);
+var author$project$Main$initGuestConnection = author$project$Main$connectWc('/guest');
+var elm$core$String$append = _String_append;
+var author$project$Main$initRegisteredConnection = function (requestedUsername) {
+	return author$project$Main$connectWc(
+		A2(elm$core$String$append, '/register?req_handle=', requestedUsername));
+};
 var author$project$Main$websocketOut = _Platform_outgoingPort('websocketOut', elm$json$Json$Encode$string);
-var author$project$Main$submitChatMessage = F2(
-	function (username, message) {
-		return author$project$Main$websocketOut(username + (': ' + message));
-	});
+var author$project$Main$submitChatMessage = function (message) {
+	return author$project$Main$websocketOut(message);
+};
 var author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -4820,11 +4826,7 @@ var author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{userMessage: ''}),
-					elm$core$Platform$Cmd$batch(
-						_List_fromArray(
-							[
-								A2(author$project$Main$submitChatMessage, username, message)
-							])));
+					author$project$Main$submitChatMessage(message));
 			case 'UpdateUserMessage':
 				var message = msg.a;
 				return _Utils_Tuple2(
@@ -4847,12 +4849,18 @@ var author$project$Main$update = F2(
 						model,
 						{username: username}),
 					elm$core$Platform$Cmd$none);
+			case 'UserRegister':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{usernameSelected: true}),
+					author$project$Main$initRegisteredConnection(model.username));
 			default:
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{usernameSelected: true}),
-					elm$core$Platform$Cmd$none);
+					author$project$Main$initGuestConnection);
 		}
 	});
 var author$project$Main$PostChatMessage = {$: 'PostChatMessage'};
@@ -5071,10 +5079,11 @@ var author$project$Main$chatView = function (model) {
 				author$project$Main$displayChatMessages(model.chatMessages)
 			]));
 };
-var author$project$Main$SelectUsername = {$: 'SelectUsername'};
+var author$project$Main$GuestRegister = {$: 'GuestRegister'};
 var author$project$Main$UpdateUsername = function (a) {
 	return {$: 'UpdateUsername', a: a};
 };
+var author$project$Main$UserRegister = {$: 'UserRegister'};
 var elm$html$Html$label = _VirtualDom_node('label');
 var author$project$Main$enterNameView = function (model) {
 	return A2(
@@ -5104,12 +5113,31 @@ var author$project$Main$enterNameView = function (model) {
 				elm$html$Html$button,
 				_List_fromArray(
 					[
-						elm$html$Html$Events$onClick(author$project$Main$SelectUsername),
+						elm$html$Html$Events$onClick(author$project$Main$UserRegister),
 						elm$html$Html$Attributes$class('button-primary')
 					]),
 				_List_fromArray(
 					[
-						elm$html$Html$text('Submit')
+						elm$html$Html$text('Register')
+					])),
+				A2(elm$html$Html$div, _List_Nil, _List_Nil),
+				A2(
+				elm$html$Html$label,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Or you can: ')
+					])),
+				A2(
+				elm$html$Html$button,
+				_List_fromArray(
+					[
+						elm$html$Html$Events$onClick(author$project$Main$GuestRegister),
+						elm$html$Html$Attributes$class('button-primary')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('Connect as Guest')
 					]))
 			]));
 };

@@ -2,8 +2,10 @@ extern crate actix;
 extern crate actix_web;
 extern crate futures;
 
+#[macro_use] extern crate serde_derive;
+
 use actix::*;
-use actix_web::{fs, http, ws, server as httpserv, App, HttpRequest, HttpResponse, Error};
+use actix_web::{fs, http, ws, server as httpserv, App, Query, HttpRequest, HttpResponse, Error};
 
 mod chatserv;
 
@@ -29,6 +31,7 @@ impl Actor for ChatSession {
                                 let (new_id, new_username) = user_info;
                                 act.id = new_id;
                                 act.username = Some(new_username);
+                                println!("Connected user: {:?}", act.username);
                             }
                             _ => ctx.stop()
                         }
@@ -41,6 +44,7 @@ impl Actor for ChatSession {
     }
 
     fn stopping(&mut self, context: &mut Self::Context) -> Running {
+        println!("Disconnecting user: {:?}", self.username);
         context.state().address.do_send(chatserv::Disconnect { id: self.id });
         Running::Stop
     }
@@ -80,6 +84,19 @@ struct ChatSessionState {
     address: Addr<chatserv::ChatServ>,
 }
 
+#[derive(Deserialize)]
+struct HandleRequest {
+    req_handle: String,
+}
+fn start_registered(req: HttpRequest<ChatSessionState>, query: Query<HandleRequest>)
+                    -> Result<HttpResponse, Error> {
+    let req_handle = &query.req_handle;
+    ws::start(&req,
+              ChatSession { id: 0,
+                            username: Some(req_handle.clone()),
+              })
+}
+
 // do handshake, start actor
 fn start_guest(req: &HttpRequest<ChatSessionState>) -> Result<HttpResponse, Error> {
     ws::start(req,
@@ -104,13 +121,13 @@ fn main() {
                     .header("LOCATION", "/elm/chat.html")
                     .finish()
             }))
-            // .resource("/register/", |r| r.method(http::Method::POST).with(start_registered))
-            .resource("/guest/", |r| r.route().f(start_guest))
+            .resource("/register", |r| r.route().with(start_registered))
+            .resource("/guest", |r| r.route().f(start_guest))
             // serve static resources
             .handler("/elm/", fs::StaticFiles::new("elm/").unwrap())
-    }).bind("localhost:8000").unwrap().start();
+    }).bind("localhost:10000").unwrap().start();
 
-    println!("Started server at: localhost:8000");
+    println!("Started server at: localhost:10000");
 
     let _ = sys.run();
 }
