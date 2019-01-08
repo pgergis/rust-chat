@@ -5,12 +5,14 @@ use actix::prelude::*;
 
 pub struct ChatServ {
     sessions: HashMap<usize, Recipient<Message>>,
+    usernames: HashMap<usize, String>,
     rand_gen: ThreadRng,
 }
 impl ChatServ {
     pub fn new() -> ChatServ {
         ChatServ {
             sessions: HashMap::new(),
+            usernames: HashMap::new(),
             rand_gen: rand::thread_rng(),
         }
     }
@@ -22,6 +24,14 @@ impl ChatServ {
             }
         }
     }
+
+    pub fn gen_random_handle(&mut self) -> String {
+        let rand_part = self.rand_gen.gen::<u32>();
+        let mut handle = String::from("guest");
+        handle.push_str(&rand_part.to_string());
+
+        handle
+    }
 }
 impl Actor for ChatServ {
     type Context = Context<Self>;
@@ -31,21 +41,28 @@ impl Actor for ChatServ {
 pub struct Message(pub String);
 
 #[derive(Message)]
-#[rtype(usize)]
+#[rtype("Result<(usize, String), std::io::Error>")]
 pub struct Connect {
     pub address: Recipient<Message>,
+    pub req_handle: Option<String>,
 }
 impl Handler<Connect> for ChatServ {
-    type Result = usize;
+    type Result = Result<(usize, String), std::io::Error>;
 
-    fn handle(&mut self, message: Connect, _: &mut Context<Self>) -> usize {
+    fn handle(&mut self, message: Connect, _: &mut Context<Self>) -> Result<(usize, String), std::io::Error> {
         println!("Someone connected!");
         self.send_message("Someone connected!", 0);
 
         let id = self.rand_gen.gen::<usize>();
         self.sessions.insert(id, message.address);
 
-        return id
+        let handle = match message.req_handle {
+            Some(s) => s,
+            _ => self.gen_random_handle()
+        };
+        self.usernames.insert(id, handle.clone());
+
+        return Ok((id, handle))
     }
 }
 

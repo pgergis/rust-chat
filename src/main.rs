@@ -9,15 +9,30 @@ mod chatserv;
 
 struct ChatSession {
     id: usize,
+    username: Option<String>,
 }
 impl Actor for ChatSession {
     type Context = ws::WebsocketContext<Self, ChatSessionState>;
 
     fn started(&mut self, context: &mut Self::Context) {
-        context.state().address.send(chatserv::Connect { address: context.address().recipient() }).into_actor(self)
+        context.state().address
+            .send(chatserv::Connect {
+                address: context.address().recipient(),
+                req_handle: self.username.clone(),
+            })
+            .into_actor(self)
             .then(|response, act, ctx| {
                 match response {
-                    Ok(response) => act.id = response,
+                    Ok(new_user) => {
+                        match new_user {
+                            Ok(user_info) => {
+                                let (new_id, new_username) = user_info;
+                                act.id = new_id;
+                                act.username = Some(new_username);
+                            }
+                            _ => ctx.stop()
+                        }
+                    }
                     _ => ctx.stop()
                 }
                 fut::ok(())
@@ -40,7 +55,8 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for ChatSession {
                 println!("Ponged!");
             }
             ws::Message::Text(text) => {
-                let mes = text.trim();
+                let mut mes = format!("<{}> ", self.username.clone().unwrap_or(String::from("MysteryGuest")));
+                mes.push_str(text.trim());
                 context.state().address.do_send(chatserv::ClientMessage { id: self.id, msg: mes.to_string() });
             }
             ws::Message::Binary(_) => {
@@ -65,8 +81,11 @@ struct ChatSessionState {
 }
 
 // do handshake, start actor
-fn initialize(req: &HttpRequest<ChatSessionState>) -> Result<HttpResponse, Error> {
-    ws::start(req, ChatSession { id: 0 })
+fn start_guest(req: &HttpRequest<ChatSessionState>) -> Result<HttpResponse, Error> {
+    ws::start(req,
+              ChatSession { id: 0,
+                            username: None,
+              })
 }
 
 fn main() {
@@ -85,8 +104,9 @@ fn main() {
                     .header("LOCATION", "/elm/chat.html")
                     .finish()
             }))
-            .resource("/ws/", |r| r.route().f(initialize))
-            // static resources
+            // .resource("/register/", |r| r.method(http::Method::POST).with(start_registered))
+            .resource("/guest/", |r| r.route().f(start_guest))
+            // serve static resources
             .handler("/elm/", fs::StaticFiles::new("elm/").unwrap())
     }).bind("localhost:8000").unwrap().start();
 
