@@ -44,7 +44,7 @@ pub struct Message(pub String);
 pub struct ClientMessage {
     pub id: usize,
     pub user: String,
-    pub msg: String,
+    pub text: String,
 }
 
 #[derive(Message)]
@@ -78,7 +78,7 @@ impl Handler<Connect> for ChatServ {
         let out = ClientMessage {
             id: 0,
             user: String::from("Host"),
-            msg: format!("{} connected!", handle),
+            text: format!("{} connected!", handle),
         };
         self.send_message(serde_json::to_string(&out).unwrap().as_str(), 0);
 
@@ -99,7 +99,7 @@ impl Handler<Disconnect> for ChatServ {
         let out = ClientMessage {
             id: 0,
             user: String::from("Host"),
-            msg: format!("{} disconnected!", message.handle),
+            text: format!("{} disconnected!", message.handle),
         };
         self.send_message(serde_json::to_string(&out).unwrap().as_str(), 0);
     }
@@ -109,7 +109,7 @@ impl Handler<ClientMessage> for ChatServ {
     type Result = ();
 
     fn handle(&mut self, message: ClientMessage, _: &mut Context<Self>) {
-        let mes = serde_json::to_string(&message);
-        self.send_message(mes.unwrap().as_str(), message.id);
+        let msg = serde_json::to_string(&message);
+        self.send_message(msg.unwrap().as_str(), message.id);
     }
 }

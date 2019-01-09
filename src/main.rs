@@ -55,18 +55,18 @@ impl Actor for ChatSession {
 impl StreamHandler<ws::Message, ws::ProtocolError> for ChatSession {
     fn handle(&mut self, message: ws::Message, context: &mut Self::Context) {
         match message {
-            ws::Message::Ping(mes) => {
-                context.pong(&mes);
+            ws::Message::Ping(msg) => {
+                context.pong(&msg);
             }
             ws::Message::Pong(_) => {
                 println!("Ponged!");
             }
-            ws::Message::Text(text) => {
+            ws::Message::Text(txt) => {
                 let username = self.username.clone().unwrap_or(String::from("MysteryGuest"));
                 context.state().address
                     .do_send(chatserv::ClientMessage { id: self.id,
                                                        user: username,
-                                                       msg: text.trim().to_string() });
+                                                       text: txt.trim().to_string() });
             }
             ws::Message::Binary(_) => {
                 println!("Don't support binary!");
@@ -126,13 +126,13 @@ fn main() {
             // redirect to chat.html
             .resource("/", |r| r.method(http::Method::GET).f(|_| {
                 HttpResponse::Found()
-                    .header("LOCATION", "/elm/chat.html")
+                    .header("LOCATION", "/app/chat.html")
                     .finish()
             }))
             .resource("/register", |r| r.route().with(start_registered))
             .resource("/guest", |r| r.route().f(start_guest))
             // serve static resources
-            .handler("/elm/", fs::StaticFiles::new("elm/").unwrap())
+            .handler("/app/", fs::StaticFiles::new("app/").unwrap())
     }).bind(format!("{}:{}", host, port)).unwrap().start();
 
     println!("Started server at: {}:{}", host, port);

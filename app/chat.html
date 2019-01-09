@@ -12,7 +12,7 @@
          const app = Elm.Main.init({node: document.getElementById("elm-node")});
 
          // client is responsible for listening for failed connection and retrying accordingly
-         app.ports.connectWc.subscribe(function(extension) {
+         app.ports.connectWs.subscribe(function(extension) {
              // extension '/guest' means guest connection
              // extension '/register?req_handle=<username>' tries to get that username
              const wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')
@@ -27,7 +27,7 @@
                  app.ports.websocketIn.send(message.data);
              };
 
-             app.ports.websocketOut.subscribe(function(msg) { socket.send(msg); });
+             app.ports.websocketOut.subscribe(function(message) { socket.send(message); });
          })
 
         </script>

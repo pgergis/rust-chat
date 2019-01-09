@@ -5041,11 +5041,11 @@ var author$project$Main$ChatMessage = F3(
 		return {text: text, time: time, username: username};
 	});
 var elm$json$Json$Encode$string = _Json_wrap;
-var author$project$Main$connectWc = _Platform_outgoingPort('connectWc', elm$json$Json$Encode$string);
-var author$project$Main$initGuestConnection = author$project$Main$connectWc('/guest');
+var author$project$Main$connectWs = _Platform_outgoingPort('connectWs', elm$json$Json$Encode$string);
+var author$project$Main$initGuestConnection = author$project$Main$connectWs('/guest');
 var elm$core$String$append = _String_append;
 var author$project$Main$initRegisteredConnection = function (requestedUsername) {
-	return author$project$Main$connectWc(
+	return author$project$Main$connectWs(
 		A2(elm$core$String$append, '/register?req_handle=', requestedUsername));
 };
 var author$project$Main$websocketOut = _Platform_outgoingPort('websocketOut', elm$json$Json$Encode$string);

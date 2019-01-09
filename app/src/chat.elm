@@ -13,7 +13,7 @@ port websocketIn : (String -> msg) -> Sub msg
 -- JavaScript usage: app.ports.websocketOut.subscribe(handler);
 port websocketOut : String -> Cmd msg
 
-port connectWc : String -> Cmd msg
+port connectWs : String -> Cmd msg
 
 main =
     Browser.element
@@ -92,7 +92,7 @@ update msg model =
                 userString = case D.decodeString (D.field "user" D.string) message of
                                  Err _ -> "INVALID_USER"
                                  Ok u -> u
-                textString = case D.decodeString (D.field "msg" D.string) message of
+                textString = case D.decodeString (D.field "text" D.string) message of
                                     Err _ -> "INVALID_MESSAGE"
                                     Ok m -> m
                 fmt =
@@ -221,22 +221,22 @@ submitChatMessage message =
     websocketOut message
 
 printChatMessage : Time.Zone -> ChatMessage -> Html msg
-printChatMessage myTimeZone mes =
+printChatMessage myTimeZone msg =
     let
-        col = if mes.username == "Host" then "red" else "blue"
-        timeString = (String.join ":" [String.fromInt (Time.toHour myTimeZone mes.time)
-                                      , String.fromInt (Time.toMinute myTimeZone mes.time)
-                                      , String.fromInt (Time.toSecond myTimeZone mes.time)])
+        col = if msg.username == "Host" then "red" else "blue"
+        timeString = (String.join ":" [String.fromInt (Time.toHour myTimeZone msg.time)
+                                      , String.fromInt (Time.toMinute myTimeZone msg.time)
+                                      , String.fromInt (Time.toSecond myTimeZone msg.time)])
     in
         div []
-            [ span [style "color" col] [text (String.append "<" (String.append mes.username "> "))]
-            , text mes.text
+            [ span [style "color" col] [text (String.append "<" (String.append msg.username "> "))]
+            , text msg.text
             , span [style "color" "green", style "font-size" "80%"] [text (String.append " " timeString)]
             ]
 
 
 initGuestConnection : Cmd Msg
-initGuestConnection = connectWc "/guest"
+initGuestConnection = connectWs "/guest"
 
 initRegisteredConnection : String -> Cmd Msg
-initRegisteredConnection requestedUsername = connectWc (String.append "/register?req_handle=" requestedUsername)
+initRegisteredConnection requestedUsername = connectWs (String.append "/register?req_handle=" requestedUsername)
