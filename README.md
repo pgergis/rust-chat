@@ -1,7 +1,5 @@
 # rusty-chat
 
-A basic WebSocket library, tested with client-server frame passing.
-
 Back end started from example code provided by actix: https://github.com/actix/examples/tree/master/websocket-chat
 
 Front end started from: https://github.com/martimatix/crystal-elm-chat
