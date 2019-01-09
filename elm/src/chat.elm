@@ -123,8 +123,11 @@ update msg model =
             , initGuestConnection
             )
 
-        UpdateTime newTime -> (model, Cmd.none)
-        AdjustTimeZone newZone -> (model, Cmd.none)
+        UpdateTime newTime -> ( { model | time = newTime }
+                              , Cmd.none)
+
+        AdjustTimeZone newZone -> ( { model | timeZone = newZone }
+                                  , Cmd.none)
 
 
 

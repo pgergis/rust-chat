@@ -5127,10 +5127,18 @@ var author$project$Main$update = F2(
 					author$project$Main$initGuestConnection);
 			case 'UpdateTime':
 				var newTime = msg.a;
-				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{time: newTime}),
+					elm$core$Platform$Cmd$none);
 			default:
 				var newZone = msg.a;
-				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{timeZone: newZone}),
+					elm$core$Platform$Cmd$none);
 		}
 	});
 var author$project$Main$PostChatMessage = {$: 'PostChatMessage'};
