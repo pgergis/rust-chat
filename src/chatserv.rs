@@ -40,16 +40,32 @@ impl Actor for ChatServ {
 #[derive(Message)]
 pub struct Message(pub String);
 
+#[derive(Message, Serialize)]
+pub struct ClientMessage {
+    pub id: usize,
+    pub user: String,
+    pub msg: String,
+}
+
 #[derive(Message)]
 #[rtype("Result<(usize, String), std::io::Error>")]
 pub struct Connect {
     pub address: Recipient<Message>,
     pub req_handle: Option<String>,
 }
+
+#[derive(Message)]
+pub struct Disconnect {
+    pub id: usize,
+    pub handle: String,
+}
+
+
 impl Handler<Connect> for ChatServ {
     type Result = Result<(usize, String), std::io::Error>;
 
-    fn handle(&mut self, message: Connect, _: &mut Context<Self>) -> Result<(usize, String), std::io::Error> {
+    fn handle(&mut self, message: Connect, _: &mut Context<Self>)
+              -> Result<(usize, String), std::io::Error> {
         let id = self.rand_gen.gen::<usize>();
         self.sessions.insert(id, message.address);
 
@@ -59,39 +75,41 @@ impl Handler<Connect> for ChatServ {
         };
         self.usernames.insert(id, handle.clone());
 
-        let mes = format!("{} connected!", handle);
-        self.send_message(&mes, 0);
+        let out = ClientMessage {
+            id: 0,
+            user: String::from("Host"),
+            msg: format!("{} connected!", handle),
+        };
+        self.send_message(serde_json::to_string(&out).unwrap().as_str(), 0);
 
         return Ok((id, handle))
     }
 }
 
 
-#[derive(Message)]
-pub struct Disconnect {
-    pub id: usize,
-}
 impl Handler<Disconnect> for ChatServ {
     type Result = ();
 
     fn handle(&mut self, message: Disconnect, _: &mut Context<Self>) {
-        println!("Someone disconnect!");
-
         self.sessions.remove(&message.id);
+        self.usernames.remove(&message.id);
 
-        self.send_message("Someone disconnected!", 0);
+        println!("Successfully disconnected!");
+
+        let out = ClientMessage {
+            id: 0,
+            user: String::from("Host"),
+            msg: format!("{} disconnected!", message.handle),
+        };
+        self.send_message(serde_json::to_string(&out).unwrap().as_str(), 0);
     }
 }
 
-#[derive(Message)]
-pub struct ClientMessage {
-    pub id: usize,
-    pub msg: String,
-}
 impl Handler<ClientMessage> for ChatServ {
     type Result = ();
 
     fn handle(&mut self, message: ClientMessage, _: &mut Context<Self>) {
-        self.send_message(message.msg.as_str(), message.id);
+        let mes = serde_json::to_string(&message);
+        self.send_message(mes.unwrap().as_str(), message.id);
     }
 }

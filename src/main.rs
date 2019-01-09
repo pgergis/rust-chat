@@ -1,11 +1,13 @@
+extern crate serde_json;
+#[macro_use] extern crate serde_derive;
+
 extern crate actix;
 extern crate actix_web;
 extern crate futures;
 
-#[macro_use] extern crate serde_derive;
-
 use actix::*;
-use actix_web::{fs, http, ws, server as httpserv, App, Query, HttpRequest, HttpResponse, Error};
+use actix_web::{fs, http, ws, server as httpserv,
+                App, Query, HttpRequest, HttpResponse, Error};
 
 mod chatserv;
 
@@ -44,8 +46,9 @@ impl Actor for ChatSession {
     }
 
     fn stopping(&mut self, context: &mut Self::Context) -> Running {
-        println!("Disconnecting user: {:?}", self.username);
-        context.state().address.do_send(chatserv::Disconnect { id: self.id });
+        let username = self.username.clone().unwrap();
+        println!("Disconnecting user: {:?}", username);
+        context.state().address.do_send(chatserv::Disconnect { id: self.id, handle: username });
         Running::Stop
     }
 }
@@ -59,9 +62,11 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for ChatSession {
                 println!("Ponged!");
             }
             ws::Message::Text(text) => {
-                let mut mes = format!("<{}> ", self.username.clone().unwrap_or(String::from("MysteryGuest")));
-                mes.push_str(text.trim());
-                context.state().address.do_send(chatserv::ClientMessage { id: self.id, msg: mes.to_string() });
+                let username = self.username.clone().unwrap_or(String::from("MysteryGuest"));
+                context.state().address
+                    .do_send(chatserv::ClientMessage { id: self.id,
+                                                       user: username,
+                                                       msg: text.trim().to_string() });
             }
             ws::Message::Binary(_) => {
                 println!("Don't support binary!");
@@ -106,6 +111,9 @@ fn start_guest(req: &HttpRequest<ChatSessionState>) -> Result<HttpResponse, Erro
 }
 
 fn main() {
+    let host = "localhost";
+    let port = 10000;
+
     let sys = actix::System::new("rusty-chat");
 
     // starts chat server on a separate thread
@@ -125,9 +133,9 @@ fn main() {
             .resource("/guest", |r| r.route().f(start_guest))
             // serve static resources
             .handler("/elm/", fs::StaticFiles::new("elm/").unwrap())
-    }).bind("localhost:10000").unwrap().start();
+    }).bind(format!("{}:{}", host, port)).unwrap().start();
 
-    println!("Started server at: localhost:10000");
+    println!("Started server at: {}:{}", host, port);
 
     let _ = sys.run();
 }

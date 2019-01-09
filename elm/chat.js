@@ -2314,6 +2314,52 @@ function _Platform_mergeExportsDebug(moduleName, obj, exports)
 
 
 
+function _Time_now(millisToPosix)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(millisToPosix(Date.now())));
+	});
+}
+
+var _Time_setInterval = F2(function(interval, task)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var id = setInterval(function() { _Scheduler_rawSpawn(task); }, interval);
+		return function() { clearInterval(id); };
+	});
+});
+
+function _Time_here()
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(
+			A2(elm$time$Time$customZone, -(new Date().getTimezoneOffset()), _List_Nil)
+		));
+	});
+}
+
+
+function _Time_getZoneName()
+{
+	return _Scheduler_binding(function(callback)
+	{
+		try
+		{
+			var name = elm$time$Time$Name(Intl.DateTimeFormat().resolvedOptions().timeZone);
+		}
+		catch (e)
+		{
+			var name = elm$time$Time$Offset(new Date().getTimezoneOffset());
+		}
+		callback(_Scheduler_succeed(name));
+	});
+}
+
+
+
 
 // HELPERS
 
@@ -4310,10 +4356,16 @@ function _Browser_load(url)
 		}
 	}));
 }
-var author$project$Main$Model = F4(
-	function (chatMessages, userMessage, username, usernameSelected) {
-		return {chatMessages: chatMessages, userMessage: userMessage, username: username, usernameSelected: usernameSelected};
+var author$project$Main$AdjustTimeZone = function (a) {
+	return {$: 'AdjustTimeZone', a: a};
+};
+var author$project$Main$Model = F6(
+	function (chatMessages, userMessage, username, usernameSelected, time, timeZone) {
+		return {chatMessages: chatMessages, time: time, timeZone: timeZone, userMessage: userMessage, username: username, usernameSelected: usernameSelected};
 	});
+var author$project$Main$UpdateTime = function (a) {
+	return {$: 'UpdateTime', a: a};
+};
 var elm$core$Basics$False = {$: 'False'};
 var elm$core$Basics$True = {$: 'True'};
 var elm$core$Result$isOk = function (result) {
@@ -4790,83 +4842,14 @@ var elm$json$Json$Decode$errorToStringHelp = F2(
 		}
 	});
 var elm$core$Platform$Cmd$batch = _Platform_batch;
-var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
-var author$project$Main$init = function (_n0) {
-	return _Utils_Tuple2(
-		A4(author$project$Main$Model, _List_Nil, '', '', false),
-		elm$core$Platform$Cmd$none);
+var elm$core$Basics$identity = function (x) {
+	return x;
 };
-var author$project$Main$NewChatMessage = function (a) {
-	return {$: 'NewChatMessage', a: a};
+var elm$core$Task$Perform = function (a) {
+	return {$: 'Perform', a: a};
 };
-var elm$json$Json$Decode$string = _Json_decodeString;
-var author$project$Main$websocketIn = _Platform_incomingPort('websocketIn', elm$json$Json$Decode$string);
-var author$project$Main$subscriptions = function (model) {
-	return author$project$Main$websocketIn(author$project$Main$NewChatMessage);
-};
-var elm$json$Json$Encode$string = _Json_wrap;
-var author$project$Main$connectWc = _Platform_outgoingPort('connectWc', elm$json$Json$Encode$string);
-var author$project$Main$initGuestConnection = author$project$Main$connectWc('/guest');
-var elm$core$String$append = _String_append;
-var author$project$Main$initRegisteredConnection = function (requestedUsername) {
-	return author$project$Main$connectWc(
-		A2(elm$core$String$append, '/register?req_handle=', requestedUsername));
-};
-var author$project$Main$websocketOut = _Platform_outgoingPort('websocketOut', elm$json$Json$Encode$string);
-var author$project$Main$submitChatMessage = function (message) {
-	return author$project$Main$websocketOut(message);
-};
-var author$project$Main$update = F2(
-	function (msg, model) {
-		switch (msg.$) {
-			case 'PostChatMessage':
-				var username = model.username;
-				var message = model.userMessage;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{userMessage: ''}),
-					author$project$Main$submitChatMessage(message));
-			case 'UpdateUserMessage':
-				var message = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{userMessage: message}),
-					elm$core$Platform$Cmd$none);
-			case 'NewChatMessage':
-				var message = msg.a;
-				var messages = A2(elm$core$List$cons, message, model.chatMessages);
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{chatMessages: messages}),
-					elm$core$Platform$Cmd$none);
-			case 'UpdateUsername':
-				var username = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{username: username}),
-					elm$core$Platform$Cmd$none);
-			case 'UserRegister':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{usernameSelected: true}),
-					author$project$Main$initRegisteredConnection(model.username));
-			default:
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{usernameSelected: true}),
-					author$project$Main$initGuestConnection);
-		}
-	});
-var author$project$Main$PostChatMessage = {$: 'PostChatMessage'};
-var author$project$Main$UpdateUserMessage = function (a) {
-	return {$: 'UpdateUserMessage', a: a};
-};
+var elm$core$Task$succeed = _Scheduler_succeed;
+var elm$core$Task$init = elm$core$Task$succeed(_Utils_Tuple0);
 var elm$core$List$foldrHelper = F4(
 	function (fn, acc, ctr, ls) {
 		if (!ls.b) {
@@ -4936,8 +4919,223 @@ var elm$core$List$map = F2(
 			_List_Nil,
 			xs);
 	});
-var elm$core$Basics$identity = function (x) {
-	return x;
+var elm$core$Task$andThen = _Scheduler_andThen;
+var elm$core$Task$map = F2(
+	function (func, taskA) {
+		return A2(
+			elm$core$Task$andThen,
+			function (a) {
+				return elm$core$Task$succeed(
+					func(a));
+			},
+			taskA);
+	});
+var elm$core$Task$map2 = F3(
+	function (func, taskA, taskB) {
+		return A2(
+			elm$core$Task$andThen,
+			function (a) {
+				return A2(
+					elm$core$Task$andThen,
+					function (b) {
+						return elm$core$Task$succeed(
+							A2(func, a, b));
+					},
+					taskB);
+			},
+			taskA);
+	});
+var elm$core$Task$sequence = function (tasks) {
+	return A3(
+		elm$core$List$foldr,
+		elm$core$Task$map2(elm$core$List$cons),
+		elm$core$Task$succeed(_List_Nil),
+		tasks);
+};
+var elm$core$Platform$sendToApp = _Platform_sendToApp;
+var elm$core$Task$spawnCmd = F2(
+	function (router, _n0) {
+		var task = _n0.a;
+		return _Scheduler_spawn(
+			A2(
+				elm$core$Task$andThen,
+				elm$core$Platform$sendToApp(router),
+				task));
+	});
+var elm$core$Task$onEffects = F3(
+	function (router, commands, state) {
+		return A2(
+			elm$core$Task$map,
+			function (_n0) {
+				return _Utils_Tuple0;
+			},
+			elm$core$Task$sequence(
+				A2(
+					elm$core$List$map,
+					elm$core$Task$spawnCmd(router),
+					commands)));
+	});
+var elm$core$Task$onSelfMsg = F3(
+	function (_n0, _n1, _n2) {
+		return elm$core$Task$succeed(_Utils_Tuple0);
+	});
+var elm$core$Task$cmdMap = F2(
+	function (tagger, _n0) {
+		var task = _n0.a;
+		return elm$core$Task$Perform(
+			A2(elm$core$Task$map, tagger, task));
+	});
+_Platform_effectManagers['Task'] = _Platform_createManager(elm$core$Task$init, elm$core$Task$onEffects, elm$core$Task$onSelfMsg, elm$core$Task$cmdMap);
+var elm$core$Task$command = _Platform_leaf('Task');
+var elm$core$Task$perform = F2(
+	function (toMessage, task) {
+		return elm$core$Task$command(
+			elm$core$Task$Perform(
+				A2(elm$core$Task$map, toMessage, task)));
+	});
+var elm$time$Time$Name = function (a) {
+	return {$: 'Name', a: a};
+};
+var elm$time$Time$Offset = function (a) {
+	return {$: 'Offset', a: a};
+};
+var elm$time$Time$Zone = F2(
+	function (a, b) {
+		return {$: 'Zone', a: a, b: b};
+	});
+var elm$time$Time$customZone = elm$time$Time$Zone;
+var elm$time$Time$here = _Time_here(_Utils_Tuple0);
+var elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var elm$time$Time$millisToPosix = elm$time$Time$Posix;
+var elm$time$Time$now = _Time_now(elm$time$Time$millisToPosix);
+var elm$time$Time$utc = A2(elm$time$Time$Zone, 0, _List_Nil);
+var author$project$Main$init = function (_n0) {
+	return _Utils_Tuple2(
+		A6(
+			author$project$Main$Model,
+			_List_Nil,
+			'',
+			'',
+			false,
+			elm$time$Time$millisToPosix(0),
+			elm$time$Time$utc),
+		elm$core$Platform$Cmd$batch(
+			_List_fromArray(
+				[
+					A2(elm$core$Task$perform, author$project$Main$UpdateTime, elm$time$Time$now),
+					A2(elm$core$Task$perform, author$project$Main$AdjustTimeZone, elm$time$Time$here)
+				])));
+};
+var author$project$Main$NewChatMessage = function (a) {
+	return {$: 'NewChatMessage', a: a};
+};
+var elm$json$Json$Decode$string = _Json_decodeString;
+var author$project$Main$websocketIn = _Platform_incomingPort('websocketIn', elm$json$Json$Decode$string);
+var author$project$Main$subscriptions = function (model) {
+	return author$project$Main$websocketIn(author$project$Main$NewChatMessage);
+};
+var author$project$Main$ChatMessage = F3(
+	function (username, text, time) {
+		return {text: text, time: time, username: username};
+	});
+var elm$json$Json$Encode$string = _Json_wrap;
+var author$project$Main$connectWc = _Platform_outgoingPort('connectWc', elm$json$Json$Encode$string);
+var author$project$Main$initGuestConnection = author$project$Main$connectWc('/guest');
+var elm$core$String$append = _String_append;
+var author$project$Main$initRegisteredConnection = function (requestedUsername) {
+	return author$project$Main$connectWc(
+		A2(elm$core$String$append, '/register?req_handle=', requestedUsername));
+};
+var author$project$Main$websocketOut = _Platform_outgoingPort('websocketOut', elm$json$Json$Encode$string);
+var author$project$Main$submitChatMessage = function (message) {
+	return author$project$Main$websocketOut(message);
+};
+var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
+var elm$json$Json$Decode$decodeString = _Json_runOnString;
+var elm$json$Json$Decode$field = _Json_decodeField;
+var author$project$Main$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'PostChatMessage':
+				var username = model.username;
+				var message = model.userMessage;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{userMessage: ''}),
+					author$project$Main$submitChatMessage(message));
+			case 'UpdateUserMessage':
+				var message = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{userMessage: message}),
+					elm$core$Platform$Cmd$none);
+			case 'NewChatMessage':
+				var message = msg.a;
+				var userString = function () {
+					var _n2 = A2(
+						elm$json$Json$Decode$decodeString,
+						A2(elm$json$Json$Decode$field, 'user', elm$json$Json$Decode$string),
+						message);
+					if (_n2.$ === 'Err') {
+						return 'INVALID_USER';
+					} else {
+						var u = _n2.a;
+						return u;
+					}
+				}();
+				var textString = function () {
+					var _n1 = A2(
+						elm$json$Json$Decode$decodeString,
+						A2(elm$json$Json$Decode$field, 'msg', elm$json$Json$Decode$string),
+						message);
+					if (_n1.$ === 'Err') {
+						return 'INVALID_MESSAGE';
+					} else {
+						var m = _n1.a;
+						return m;
+					}
+				}();
+				var fmt = A3(author$project$Main$ChatMessage, userString, textString, model.time);
+				var messages = A2(elm$core$List$cons, fmt, model.chatMessages);
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{chatMessages: messages}),
+					A2(elm$core$Task$perform, author$project$Main$UpdateTime, elm$time$Time$now));
+			case 'UpdateUsername':
+				var username = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{username: username}),
+					elm$core$Platform$Cmd$none);
+			case 'UserRegister':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{usernameSelected: true}),
+					author$project$Main$initRegisteredConnection(model.username));
+			case 'GuestRegister':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{usernameSelected: true}),
+					author$project$Main$initGuestConnection);
+			case 'UpdateTime':
+				var newTime = msg.a;
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+			default:
+				var newZone = msg.a;
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Main$PostChatMessage = {$: 'PostChatMessage'};
+var author$project$Main$UpdateUserMessage = function (a) {
+	return {$: 'UpdateUserMessage', a: a};
 };
 var elm$json$Json$Decode$map = _Json_map1;
 var elm$json$Json$Decode$map2 = _Json_map2;
@@ -4955,25 +5153,142 @@ var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	}
 };
 var elm$html$Html$div = _VirtualDom_node('div');
+var elm$html$Html$span = _VirtualDom_node('span');
 var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
-var author$project$Main$displayChatMessages = function (chatMessages) {
-	return A2(
-		elm$html$Html$div,
-		_List_Nil,
-		A2(
-			elm$core$List$map,
-			function (x) {
-				return A2(
-					elm$html$Html$div,
-					_List_Nil,
+var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
+var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
+var elm$core$Basics$modBy = _Basics_modBy;
+var elm$time$Time$flooredDiv = F2(
+	function (numerator, denominator) {
+		return elm$core$Basics$floor(numerator / denominator);
+	});
+var elm$time$Time$posixToMillis = function (_n0) {
+	var millis = _n0.a;
+	return millis;
+};
+var elm$time$Time$toAdjustedMinutesHelp = F3(
+	function (defaultOffset, posixMinutes, eras) {
+		toAdjustedMinutesHelp:
+		while (true) {
+			if (!eras.b) {
+				return posixMinutes + defaultOffset;
+			} else {
+				var era = eras.a;
+				var olderEras = eras.b;
+				if (_Utils_cmp(era.start, posixMinutes) < 0) {
+					return posixMinutes + era.offset;
+				} else {
+					var $temp$defaultOffset = defaultOffset,
+						$temp$posixMinutes = posixMinutes,
+						$temp$eras = olderEras;
+					defaultOffset = $temp$defaultOffset;
+					posixMinutes = $temp$posixMinutes;
+					eras = $temp$eras;
+					continue toAdjustedMinutesHelp;
+				}
+			}
+		}
+	});
+var elm$time$Time$toAdjustedMinutes = F2(
+	function (_n0, time) {
+		var defaultOffset = _n0.a;
+		var eras = _n0.b;
+		return A3(
+			elm$time$Time$toAdjustedMinutesHelp,
+			defaultOffset,
+			A2(
+				elm$time$Time$flooredDiv,
+				elm$time$Time$posixToMillis(time),
+				60000),
+			eras);
+	});
+var elm$time$Time$toHour = F2(
+	function (zone, time) {
+		return A2(
+			elm$core$Basics$modBy,
+			24,
+			A2(
+				elm$time$Time$flooredDiv,
+				A2(elm$time$Time$toAdjustedMinutes, zone, time),
+				60));
+	});
+var elm$time$Time$toMinute = F2(
+	function (zone, time) {
+		return A2(
+			elm$core$Basics$modBy,
+			60,
+			A2(elm$time$Time$toAdjustedMinutes, zone, time));
+	});
+var elm$time$Time$toSecond = F2(
+	function (_n0, time) {
+		return A2(
+			elm$core$Basics$modBy,
+			60,
+			A2(
+				elm$time$Time$flooredDiv,
+				elm$time$Time$posixToMillis(time),
+				1000));
+	});
+var author$project$Main$printChatMessage = F2(
+	function (myTimeZone, mes) {
+		var timeString = A2(
+			elm$core$String$join,
+			':',
+			_List_fromArray(
+				[
+					elm$core$String$fromInt(
+					A2(elm$time$Time$toHour, myTimeZone, mes.time)),
+					elm$core$String$fromInt(
+					A2(elm$time$Time$toMinute, myTimeZone, mes.time)),
+					elm$core$String$fromInt(
+					A2(elm$time$Time$toSecond, myTimeZone, mes.time))
+				]));
+		var col = (mes.username === 'Host') ? 'red' : 'blue';
+		return A2(
+			elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$span,
 					_List_fromArray(
 						[
-							elm$html$Html$text(x)
-						]));
-			},
-			chatMessages));
-};
+							A2(elm$html$Html$Attributes$style, 'color', col)
+						]),
+					_List_fromArray(
+						[
+							elm$html$Html$text(
+							A2(
+								elm$core$String$append,
+								'<',
+								A2(elm$core$String$append, mes.username, '> ')))
+						])),
+					elm$html$Html$text(mes.text),
+					A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							A2(elm$html$Html$Attributes$style, 'color', 'green'),
+							A2(elm$html$Html$Attributes$style, 'font-size', '80%')
+						]),
+					_List_fromArray(
+						[
+							elm$html$Html$text(
+							A2(elm$core$String$append, ' ', timeString))
+						]))
+				]));
+	});
+var author$project$Main$displayChatMessages = F2(
+	function (myTimeZone, chatMessages) {
+		return A2(
+			elm$html$Html$div,
+			_List_Nil,
+			A2(
+				elm$core$List$map,
+				author$project$Main$printChatMessage(myTimeZone),
+				chatMessages));
+	});
 var elm$html$Html$button = _VirtualDom_node('button');
 var elm$html$Html$input = _VirtualDom_node('input');
 var elm$json$Json$Encode$bool = _Json_wrap;
@@ -4994,8 +5309,6 @@ var elm$html$Html$Attributes$stringProperty = F2(
 	});
 var elm$html$Html$Attributes$class = elm$html$Html$Attributes$stringProperty('className');
 var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
-var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
-var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
 var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
 var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
 var elm$virtual_dom$VirtualDom$Normal = function (a) {
@@ -5028,7 +5341,6 @@ var elm$html$Html$Events$stopPropagationOn = F2(
 			event,
 			elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
 	});
-var elm$json$Json$Decode$field = _Json_decodeField;
 var elm$json$Json$Decode$at = F2(
 	function (fields, decoder) {
 		return A3(elm$core$List$foldr, elm$json$Json$Decode$field, decoder, fields);
@@ -5076,7 +5388,7 @@ var author$project$Main$chatView = function (model) {
 					[
 						elm$html$Html$text('Submit')
 					])),
-				author$project$Main$displayChatMessages(model.chatMessages)
+				A2(author$project$Main$displayChatMessages, model.timeZone, model.chatMessages)
 			]));
 };
 var author$project$Main$GuestRegister = {$: 'GuestRegister'};
@@ -5182,85 +5494,6 @@ var elm$core$Basics$never = function (_n0) {
 		continue never;
 	}
 };
-var elm$core$Task$Perform = function (a) {
-	return {$: 'Perform', a: a};
-};
-var elm$core$Task$succeed = _Scheduler_succeed;
-var elm$core$Task$init = elm$core$Task$succeed(_Utils_Tuple0);
-var elm$core$Task$andThen = _Scheduler_andThen;
-var elm$core$Task$map = F2(
-	function (func, taskA) {
-		return A2(
-			elm$core$Task$andThen,
-			function (a) {
-				return elm$core$Task$succeed(
-					func(a));
-			},
-			taskA);
-	});
-var elm$core$Task$map2 = F3(
-	function (func, taskA, taskB) {
-		return A2(
-			elm$core$Task$andThen,
-			function (a) {
-				return A2(
-					elm$core$Task$andThen,
-					function (b) {
-						return elm$core$Task$succeed(
-							A2(func, a, b));
-					},
-					taskB);
-			},
-			taskA);
-	});
-var elm$core$Task$sequence = function (tasks) {
-	return A3(
-		elm$core$List$foldr,
-		elm$core$Task$map2(elm$core$List$cons),
-		elm$core$Task$succeed(_List_Nil),
-		tasks);
-};
-var elm$core$Platform$sendToApp = _Platform_sendToApp;
-var elm$core$Task$spawnCmd = F2(
-	function (router, _n0) {
-		var task = _n0.a;
-		return _Scheduler_spawn(
-			A2(
-				elm$core$Task$andThen,
-				elm$core$Platform$sendToApp(router),
-				task));
-	});
-var elm$core$Task$onEffects = F3(
-	function (router, commands, state) {
-		return A2(
-			elm$core$Task$map,
-			function (_n0) {
-				return _Utils_Tuple0;
-			},
-			elm$core$Task$sequence(
-				A2(
-					elm$core$List$map,
-					elm$core$Task$spawnCmd(router),
-					commands)));
-	});
-var elm$core$Task$onSelfMsg = F3(
-	function (_n0, _n1, _n2) {
-		return elm$core$Task$succeed(_Utils_Tuple0);
-	});
-var elm$core$Task$cmdMap = F2(
-	function (tagger, _n0) {
-		var task = _n0.a;
-		return elm$core$Task$Perform(
-			A2(elm$core$Task$map, tagger, task));
-	});
-_Platform_effectManagers['Task'] = _Platform_createManager(elm$core$Task$init, elm$core$Task$onEffects, elm$core$Task$onSelfMsg, elm$core$Task$cmdMap);
-var elm$core$Task$command = _Platform_leaf('Task');
-var elm$core$Task$perform = F2(
-	function (toMessage, task) {
-		return elm$core$Task$command(
-			elm$core$Task$Perform(
-				A2(elm$core$Task$map, toMessage, task)));
-	});
 var elm$core$String$length = _String_length;
 var elm$core$String$slice = _String_slice;
 var elm$core$String$dropLeft = F2(

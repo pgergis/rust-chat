@@ -4,6 +4,9 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Json.Decode as D
+import Task
+import Time
 
 -- JavaScript usage: app.ports.websocketIn.send(response);
 port websocketIn : (String -> msg) -> Sub msg
@@ -24,19 +27,28 @@ main =
 
 -- MODEL
 
+type alias ChatMessage =
+    { username: String
+    , text: String
+    , time: Time.Posix
+    }
+
 
 type alias Model =
-    { chatMessages : List String
+    { chatMessages : List ChatMessage
     , userMessage : String
     , username : String
     , usernameSelected : Bool
+    , time: Time.Posix
+    , timeZone: Time.Zone
     }
 
 
 init : () -> (Model, Cmd Msg)
 init _ =
-    (Model [] "" "" False
-    , Cmd.none
+    (Model [] "" "" False (Time.millisToPosix 0) Time.utc
+    , Cmd.batch [Task.perform UpdateTime Time.now
+                , Task.perform AdjustTimeZone Time.here]
     )
 
 
@@ -51,7 +63,8 @@ type Msg
     | UpdateUsername String
     | UserRegister
     | GuestRegister
-
+    | UpdateTime Time.Posix
+    | AdjustTimeZone Time.Zone
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -76,11 +89,23 @@ update msg model =
 
         NewChatMessage message ->
             let
+                userString = case D.decodeString (D.field "user" D.string) message of
+                                 Err _ -> "INVALID_USER"
+                                 Ok u -> u
+                textString = case D.decodeString (D.field "msg" D.string) message of
+                                    Err _ -> "INVALID_MESSAGE"
+                                    Ok m -> m
+                fmt =
+                    ChatMessage
+                        userString
+                        textString
+                        model.time
+
                 messages =
-                    message :: model.chatMessages
+                    fmt :: model.chatMessages
             in
                 ( { model | chatMessages = messages }
-                , Cmd.none
+                , Task.perform UpdateTime Time.now
                 )
 
         UpdateUsername username ->
@@ -97,6 +122,9 @@ update msg model =
             ( { model | usernameSelected = True }
             , initGuestConnection
             )
+
+        UpdateTime newTime -> (model, Cmd.none)
+        AdjustTimeZone newZone -> (model, Cmd.none)
 
 
 
@@ -163,13 +191,13 @@ chatView model =
             , class "button-primary"
             ]
             [ text "Submit" ]
-        , displayChatMessages model.chatMessages
+        , displayChatMessages model.timeZone model.chatMessages
         ]
 
 
-displayChatMessages : List String -> Html a
-displayChatMessages chatMessages =
-    div [] (List.map (\x -> div [] [ text x ]) chatMessages)
+displayChatMessages : Time.Zone -> List ChatMessage -> Html a
+displayChatMessages myTimeZone chatMessages =
+    div [] (List.map (printChatMessage myTimeZone) chatMessages)
 
 
 
@@ -188,6 +216,21 @@ subscriptions model =
 submitChatMessage : String -> Cmd Msg
 submitChatMessage message =
     websocketOut message
+
+printChatMessage : Time.Zone -> ChatMessage -> Html msg
+printChatMessage myTimeZone mes =
+    let
+        col = if mes.username == "Host" then "red" else "blue"
+        timeString = (String.join ":" [String.fromInt (Time.toHour myTimeZone mes.time)
+                                      , String.fromInt (Time.toMinute myTimeZone mes.time)
+                                      , String.fromInt (Time.toSecond myTimeZone mes.time)])
+    in
+        div []
+            [ span [style "color" col] [text (String.append "<" (String.append mes.username "> "))]
+            , text mes.text
+            , span [style "color" "green", style "font-size" "80%"] [text (String.append " " timeString)]
+            ]
+
 
 initGuestConnection : Cmd Msg
 initGuestConnection = connectWc "/guest"

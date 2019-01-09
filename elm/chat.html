@@ -22,14 +22,9 @@
              const socket = new WebSocket(wsUri);
 
              // Listen for messages
-             socket.addEventListener('message', function (event) {
-                 app.ports.websocketIn.send(JSON.stringify({data:message.data,timeStamp:message.timeStamp}));
-             });
-
-             // Listen for server responses
              socket.onmessage = function(message) {
-                 console.log(message);
-                 app.ports.websocketIn.send(JSON.stringify({data:message.data,timeStamp:message.timeStamp}));
+                 console.log(message.data);
+                 app.ports.websocketIn.send(message.data);
              };
 
              app.ports.websocketOut.subscribe(function(msg) { socket.send(msg); });
