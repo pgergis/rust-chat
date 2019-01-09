@@ -5061,11 +5061,20 @@ var author$project$Main$update = F2(
 			case 'PostChatMessage':
 				var username = model.username;
 				var message = model.userMessage;
+				var messages = A2(
+					elm$core$List$cons,
+					A3(author$project$Main$ChatMessage, username, message, model.time),
+					model.chatMessages);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{userMessage: ''}),
-					author$project$Main$submitChatMessage(message));
+						{chatMessages: messages, userMessage: ''}),
+					elm$core$Platform$Cmd$batch(
+						_List_fromArray(
+							[
+								author$project$Main$submitChatMessage(message),
+								A2(elm$core$Task$perform, author$project$Main$UpdateTime, elm$time$Time$now)
+							])));
 			case 'UpdateUserMessage':
 				var message = msg.a;
 				return _Utils_Tuple2(
@@ -5090,7 +5099,7 @@ var author$project$Main$update = F2(
 				var textString = function () {
 					var _n1 = A2(
 						elm$json$Json$Decode$decodeString,
-						A2(elm$json$Json$Decode$field, 'msg', elm$json$Json$Decode$string),
+						A2(elm$json$Json$Decode$field, 'text', elm$json$Json$Decode$string),
 						message);
 					if (_n1.$ === 'Err') {
 						return 'INVALID_MESSAGE';
@@ -5099,8 +5108,8 @@ var author$project$Main$update = F2(
 						return m;
 					}
 				}();
-				var fmt = A3(author$project$Main$ChatMessage, userString, textString, model.time);
-				var messages = A2(elm$core$List$cons, fmt, model.chatMessages);
+				var fmtMessage = A3(author$project$Main$ChatMessage, userString, textString, model.time);
+				var messages = A2(elm$core$List$cons, fmtMessage, model.chatMessages);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -5123,7 +5132,7 @@ var author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{usernameSelected: true}),
+						{username: 'Guest', usernameSelected: true}),
 					author$project$Main$initGuestConnection);
 			case 'UpdateTime':
 				var newTime = msg.a;
@@ -5164,6 +5173,14 @@ var elm$html$Html$div = _VirtualDom_node('div');
 var elm$html$Html$span = _VirtualDom_node('span');
 var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
+var elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			elm$json$Json$Encode$string(string));
+	});
+var elm$html$Html$Attributes$align = elm$html$Html$Attributes$stringProperty('align');
 var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
 var elm$core$Basics$modBy = _Basics_modBy;
@@ -5238,24 +5255,29 @@ var elm$time$Time$toSecond = F2(
 				elm$time$Time$posixToMillis(time),
 				1000));
 	});
-var author$project$Main$printChatMessage = F2(
-	function (myTimeZone, mes) {
+var author$project$Main$printChatMessage = F3(
+	function (myUsername, myTimeZone, msg) {
 		var timeString = A2(
 			elm$core$String$join,
 			':',
 			_List_fromArray(
 				[
 					elm$core$String$fromInt(
-					A2(elm$time$Time$toHour, myTimeZone, mes.time)),
+					A2(elm$time$Time$toHour, myTimeZone, msg.time)),
 					elm$core$String$fromInt(
-					A2(elm$time$Time$toMinute, myTimeZone, mes.time)),
+					A2(elm$time$Time$toMinute, myTimeZone, msg.time)),
 					elm$core$String$fromInt(
-					A2(elm$time$Time$toSecond, myTimeZone, mes.time))
+					A2(elm$time$Time$toSecond, myTimeZone, msg.time))
 				]));
-		var col = (mes.username === 'Host') ? 'red' : 'blue';
+		var col = (msg.username === 'Host') ? 'red' : 'blue';
 		return A2(
 			elm$html$Html$div,
-			_List_Nil,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$align(
+					_Utils_eq(msg.username, myUsername) ? 'right' : 'left'),
+					A2(elm$html$Html$Attributes$style, 'word-wrap', 'normal')
+				]),
 			_List_fromArray(
 				[
 					A2(
@@ -5270,9 +5292,9 @@ var author$project$Main$printChatMessage = F2(
 							A2(
 								elm$core$String$append,
 								'<',
-								A2(elm$core$String$append, mes.username, '> ')))
+								A2(elm$core$String$append, msg.username, '> ')))
 						])),
-					elm$html$Html$text(mes.text),
+					elm$html$Html$text(msg.text),
 					A2(
 					elm$html$Html$span,
 					_List_fromArray(
@@ -5287,14 +5309,23 @@ var author$project$Main$printChatMessage = F2(
 						]))
 				]));
 	});
-var author$project$Main$displayChatMessages = F2(
-	function (myTimeZone, chatMessages) {
+var author$project$Main$displayChatMessages = F3(
+	function (myUsername, myTimeZone, chatMessages) {
 		return A2(
 			elm$html$Html$div,
-			_List_Nil,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$align('center'),
+					A2(elm$html$Html$Attributes$style, 'padding-top', '5%'),
+					A2(elm$html$Html$Attributes$style, 'padding-left', '25%'),
+					A2(elm$html$Html$Attributes$style, 'width', '50%'),
+					A2(elm$html$Html$Attributes$style, 'display', 'inline-block'),
+					A2(elm$html$Html$Attributes$style, 'zoom', '1'),
+					A2(elm$html$Html$Attributes$style, 'display*', 'inline')
+				]),
 			A2(
 				elm$core$List$map,
-				author$project$Main$printChatMessage(myTimeZone),
+				A2(author$project$Main$printChatMessage, myUsername, myTimeZone),
 				chatMessages));
 	});
 var elm$html$Html$button = _VirtualDom_node('button');
@@ -5308,13 +5339,6 @@ var elm$html$Html$Attributes$boolProperty = F2(
 			elm$json$Json$Encode$bool(bool));
 	});
 var elm$html$Html$Attributes$autofocus = elm$html$Html$Attributes$boolProperty('autofocus');
-var elm$html$Html$Attributes$stringProperty = F2(
-	function (key, string) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			elm$json$Json$Encode$string(string));
-	});
 var elm$html$Html$Attributes$class = elm$html$Html$Attributes$stringProperty('className');
 var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
 var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
@@ -5382,7 +5406,8 @@ var author$project$Main$chatView = function (model) {
 						elm$html$Html$Attributes$value(model.userMessage),
 						elm$html$Html$Events$onInput(author$project$Main$UpdateUserMessage),
 						elm$html$Html$Attributes$type_('text'),
-						A2(elm$html$Html$Attributes$style, 'margin-right', '0.5em')
+						A2(elm$html$Html$Attributes$style, 'margin-right', '0.5em'),
+						elm$html$Html$Attributes$align('left')
 					]),
 				_List_Nil),
 				A2(
@@ -5396,7 +5421,8 @@ var author$project$Main$chatView = function (model) {
 					[
 						elm$html$Html$text('Submit')
 					])),
-				A2(author$project$Main$displayChatMessages, model.timeZone, model.chatMessages)
+				A2(elm$html$Html$div, _List_Nil, _List_Nil),
+				A3(author$project$Main$displayChatMessages, model.username, model.timeZone, model.chatMessages)
 			]));
 };
 var author$project$Main$GuestRegister = {$: 'GuestRegister'};

@@ -71,15 +71,13 @@ update msg model =
     case msg of
         PostChatMessage ->
             let
-                message =
-                    model.userMessage
-
-                username =
-                    model.username
-
+                message = model.userMessage
+                username = model.username
+                messages = (ChatMessage username message model.time) :: model.chatMessages
             in
-                ( { model | userMessage = "" }
-                , submitChatMessage message
+                ( { model | chatMessages = messages, userMessage = "" }
+                , Cmd.batch [submitChatMessage message
+                            , Task.perform UpdateTime Time.now]
                 )
 
         UpdateUserMessage message ->
@@ -95,14 +93,14 @@ update msg model =
                 textString = case D.decodeString (D.field "text" D.string) message of
                                     Err _ -> "INVALID_MESSAGE"
                                     Ok m -> m
-                fmt =
+                fmtMessage =
                     ChatMessage
                         userString
                         textString
                         model.time
 
                 messages =
-                    fmt :: model.chatMessages
+                    fmtMessage :: model.chatMessages
             in
                 ( { model | chatMessages = messages }
                 , Task.perform UpdateTime Time.now
@@ -119,7 +117,7 @@ update msg model =
             )
 
         GuestRegister ->
-            ( { model | usernameSelected = True }
+            ( { model | username = "Guest", usernameSelected = True }
             , initGuestConnection
             )
 
@@ -187,6 +185,7 @@ chatView model =
             , onInput UpdateUserMessage
             , type_ "text"
             , style "margin-right" "0.5em"
+            , align "left"
             ]
             []
         , button
@@ -194,13 +193,21 @@ chatView model =
             , class "button-primary"
             ]
             [ text "Submit" ]
-        , displayChatMessages model.timeZone model.chatMessages
+        , div [] []
+        , displayChatMessages model.username model.timeZone model.chatMessages
         ]
 
 
-displayChatMessages : Time.Zone -> List ChatMessage -> Html a
-displayChatMessages myTimeZone chatMessages =
-    div [] (List.map (printChatMessage myTimeZone) chatMessages)
+displayChatMessages : String -> Time.Zone -> List ChatMessage -> Html a
+displayChatMessages myUsername myTimeZone chatMessages =
+    div [align "center"
+        , style "padding-top" "5%"
+        , style "padding-left" "25%"
+        , style "width" "50%"
+        , style "display" "inline-block"
+        , style "zoom" "1"
+        , style "display*" "inline"]
+        (List.map (printChatMessage myUsername myTimeZone) chatMessages)
 
 
 
@@ -220,15 +227,16 @@ submitChatMessage : String -> Cmd Msg
 submitChatMessage message =
     websocketOut message
 
-printChatMessage : Time.Zone -> ChatMessage -> Html msg
-printChatMessage myTimeZone msg =
+printChatMessage : String ->  Time.Zone -> ChatMessage -> Html msg
+printChatMessage myUsername myTimeZone msg =
     let
         col = if msg.username == "Host" then "red" else "blue"
         timeString = (String.join ":" [String.fromInt (Time.toHour myTimeZone msg.time)
                                       , String.fromInt (Time.toMinute myTimeZone msg.time)
                                       , String.fromInt (Time.toSecond myTimeZone msg.time)])
     in
-        div []
+        div [align (if msg.username == myUsername then "right" else "left")
+            , style "word-wrap" "normal"]
             [ span [style "color" col] [text (String.append "<" (String.append msg.username "> "))]
             , text msg.text
             , span [style "color" "green", style "font-size" "80%"] [text (String.append " " timeString)]
