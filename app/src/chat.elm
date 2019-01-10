@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as D
+import Dict
 import Task
 import Time
 
@@ -39,6 +40,7 @@ type alias Model =
     { chatMessages : List ChatMessage
     , userMessage : String
     , username : String
+    , otherUsers: List String
     , usernameSelected : Bool
     , time: Time.Posix
     , timeZone: Time.Zone
@@ -47,7 +49,7 @@ type alias Model =
 
 init : () -> (Model, Cmd Msg)
 init _ =
-    ( Model [] "" "" False (Time.millisToPosix 0) Time.utc
+    ( Model [] "" "" [] False (Time.millisToPosix 0) Time.utc
     , Cmd.batch [ Task.perform UpdateTime Time.now
                 , Task.perform AdjustTimeZone Time.here
                 ]
@@ -98,6 +100,9 @@ update msg model =
                 textString = case D.decodeString (D.field "text" D.string) message of
                                     Err _ -> "INVALID_MESSAGE"
                                     Ok m -> m
+                updatedUsers = case D.decodeString (D.field "to_users" (D.dict D.string)) message of
+                                 Err _ -> []
+                                 Ok d -> Dict.values d
                 fmtMessage =
                     ChatMessage
                         userId
@@ -108,7 +113,7 @@ update msg model =
                 messages =
                     fmtMessage :: model.chatMessages
             in
-                ( { model | chatMessages = messages }
+                ( { model | chatMessages = messages, otherUsers = updatedUsers }
                 , Task.perform UpdateTime Time.now
                 )
 
@@ -201,6 +206,11 @@ chatView model =
             [ text "Submit" ]
         , div [] []
         , displayChatMessages model.username model.timeZone model.chatMessages
+        , div [ style "color" "green"
+              , style "padding-top" "5%"
+              ]
+              [ text "Connected users: " ]
+        , displayConnectedUsers model.otherUsers
         ]
 
 
@@ -215,7 +225,10 @@ displayChatMessages myUsername myTimeZone chatMessages =
         , style "display*" "inline"]
         (List.map (printChatMessage myUsername myTimeZone) chatMessages)
 
-
+displayConnectedUsers : List String -> Html a
+displayConnectedUsers users =
+  div [ style "word-wrap" "normal" ]
+      (List.map (\x -> div [] [ text x ]) users)
 
 -- SUBSCRIPTIONS
 
@@ -245,9 +258,9 @@ printChatMessage myUsername myTimeZone msg =
                     else if msg.fromHost then "center"
                     else "left")
             , style "word-wrap" "normal"]
-            [ span [style "color" col] [text (String.append "<" (String.append msg.username "> "))]
+            [ span [style "color" col] [text ("<" ++ msg.username ++ "> ")]
             , span [] [text msg.text]
-            , span [style "color" "green", style "font-size" "80%"] [text (String.append " " timeString)]
+            , span [style "color" "green", style "font-size" "80%"] [text (" " ++ timeString)]
             ]
 
 
@@ -255,4 +268,4 @@ initGuestConnection : Cmd Msg
 initGuestConnection = connectWs "/guest"
 
 initRegisteredConnection : String -> Cmd Msg
-initRegisteredConnection requestedUsername = connectWs (String.append "/register?req_handle=" requestedUsername)
+initRegisteredConnection requestedUsername = connectWs ("/register?req_handle=" ++ requestedUsername)

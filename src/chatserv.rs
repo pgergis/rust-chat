@@ -45,6 +45,7 @@ pub struct ClientMessage {
     pub id: usize,
     pub user: String,
     pub text: String,
+    pub to_users: HashMap<usize, String>
 }
 
 #[derive(Message)]
@@ -79,6 +80,7 @@ impl Handler<Connect> for ChatServ {
             id: 0,
             user: String::from("Host"),
             text: format!("{} connected!", handle),
+            to_users: self.usernames.clone(),
         };
         self.send_message(serde_json::to_string(&out).unwrap().as_str(), 0);
 
@@ -100,6 +102,7 @@ impl Handler<Disconnect> for ChatServ {
             id: 0,
             user: String::from("Host"),
             text: format!("{} disconnected!", message.handle),
+            to_users: self.usernames.clone(),
         };
         self.send_message(serde_json::to_string(&out).unwrap().as_str(), 0);
     }
@@ -109,7 +112,9 @@ impl Handler<ClientMessage> for ChatServ {
     type Result = ();
 
     fn handle(&mut self, message: ClientMessage, _: &mut Context<Self>) {
-        let msg = serde_json::to_string(&message);
-        self.send_message(msg.unwrap().as_str(), message.id);
+        let mut updated_msg = message;
+        updated_msg.to_users = self.usernames.clone();
+        let msg = serde_json::to_string(&updated_msg);
+        self.send_message(msg.unwrap().as_str(), updated_msg.id);
     }
 }

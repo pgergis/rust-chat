@@ -5,6 +5,7 @@ extern crate actix;
 extern crate actix_web;
 extern crate futures;
 
+use std::collections::{HashMap};
 use std::time::{Instant, Duration};
 
 use actix::*;
@@ -17,6 +18,7 @@ struct ChatSession {
     id: usize,
     username: Option<String>,
     hb: Instant,
+    known_others: HashMap<usize, String>,
 }
 impl Actor for ChatSession {
     type Context = ws::WebsocketContext<Self, ChatSessionState>;
@@ -71,7 +73,9 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for ChatSession {
                 context.state().address
                     .do_send(chatserv::ClientMessage { id: self.id,
                                                        user: username,
-                                                       text: txt.trim().to_string() });
+                                                       text: txt.trim().to_string(),
+                                                       to_users: self.known_others.clone(),
+                    });
             }
             ws::Message::Binary(_) => {
                 println!("Don't support binary!");
@@ -119,6 +123,7 @@ fn start_registered(req: HttpRequest<ChatSessionState>, query: Query<HandleReque
               ChatSession { id: 0,
                             username: Some(req_handle.clone()),
                             hb: Instant::now(),
+                            known_others: HashMap::new(),
               })
 }
 
@@ -128,6 +133,7 @@ fn start_guest(req: &HttpRequest<ChatSessionState>) -> Result<HttpResponse, Erro
               ChatSession { id: 0,
                             username: None,
                             hb: Instant::now(),
+                            known_others: HashMap::new(),
               })
 }
 
