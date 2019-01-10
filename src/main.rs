@@ -5,6 +5,8 @@ extern crate actix;
 extern crate actix_web;
 extern crate futures;
 
+use std::time::{Instant, Duration};
+
 use actix::*;
 use actix_web::{fs, http, ws, server as httpserv,
                 App, Query, HttpRequest, HttpResponse, Error};
@@ -14,11 +16,13 @@ mod chatserv;
 struct ChatSession {
     id: usize,
     username: Option<String>,
+    hb: Instant,
 }
 impl Actor for ChatSession {
     type Context = ws::WebsocketContext<Self, ChatSessionState>;
 
     fn started(&mut self, context: &mut Self::Context) {
+        self.heartbeat(context);
         context.state().address
             .send(chatserv::Connect {
                 address: context.address().recipient(),
@@ -56,10 +60,11 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for ChatSession {
     fn handle(&mut self, message: ws::Message, context: &mut Self::Context) {
         match message {
             ws::Message::Ping(msg) => {
+                self.hb = Instant::now();
                 context.pong(&msg);
             }
             ws::Message::Pong(_) => {
-                println!("Ponged!");
+                self.hb = Instant::now();
             }
             ws::Message::Text(txt) => {
                 let username = self.username.clone().unwrap_or(String::from("MysteryGuest"));
@@ -85,6 +90,20 @@ impl Handler<chatserv::Message> for ChatSession {
     }
 }
 
+const HB_INTERVAL: Duration = Duration::from_secs(5);
+const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
+impl ChatSession {
+    fn heartbeat(&self, context: &mut ws::WebsocketContext<Self, ChatSessionState>) {
+        context.run_interval(HB_INTERVAL, |act, ctx| {
+            if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
+                println!("Client heartbeat failed; disconnecting {:?}", act.username);
+                ctx.stop();
+            }
+            else { ctx.ping("U up?"); }
+        });
+    }
+}
+
 struct ChatSessionState {
     address: Addr<chatserv::ChatServ>,
 }
@@ -99,6 +118,7 @@ fn start_registered(req: HttpRequest<ChatSessionState>, query: Query<HandleReque
     ws::start(&req,
               ChatSession { id: 0,
                             username: Some(req_handle.clone()),
+                            hb: Instant::now(),
               })
 }
 
@@ -107,12 +127,13 @@ fn start_guest(req: &HttpRequest<ChatSessionState>) -> Result<HttpResponse, Erro
     ws::start(req,
               ChatSession { id: 0,
                             username: None,
+                            hb: Instant::now(),
               })
 }
 
 fn main() {
-    let host = "localhost";
-    let port = 10000;
+    const HOST: &str = "localhost";
+    const PORT: u16 = 10000;
 
     let sys = actix::System::new("rusty-chat");
 
@@ -133,9 +154,9 @@ fn main() {
             .resource("/guest", |r| r.route().f(start_guest))
             // serve static resources
             .handler("/app/", fs::StaticFiles::new("app/").unwrap())
-    }).bind(format!("{}:{}", host, port)).unwrap().start();
+    }).bind(format!("{}:{}", HOST, PORT)).unwrap().start();
 
-    println!("Started server at: {}:{}", host, port);
+    println!("Started server at: {}:{}", HOST, PORT);
 
     let _ = sys.run();
 }
