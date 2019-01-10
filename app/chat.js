@@ -5036,9 +5036,9 @@ var author$project$Main$websocketIn = _Platform_incomingPort('websocketIn', elm$
 var author$project$Main$subscriptions = function (model) {
 	return author$project$Main$websocketIn(author$project$Main$NewChatMessage);
 };
-var author$project$Main$ChatMessage = F3(
-	function (username, text, time) {
-		return {text: text, time: time, username: username};
+var author$project$Main$ChatMessage = F4(
+	function (fromHost, username, text, time) {
+		return {fromHost: fromHost, text: text, time: time, username: username};
 	});
 var elm$json$Json$Encode$string = _Json_wrap;
 var author$project$Main$connectWs = _Platform_outgoingPort('connectWs', elm$json$Json$Encode$string);
@@ -5055,6 +5055,7 @@ var author$project$Main$submitChatMessage = function (message) {
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var elm$json$Json$Decode$decodeString = _Json_runOnString;
 var elm$json$Json$Decode$field = _Json_decodeField;
+var elm$json$Json$Decode$int = _Json_decodeInt;
 var author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -5063,7 +5064,7 @@ var author$project$Main$update = F2(
 				var message = model.userMessage;
 				var messages = A2(
 					elm$core$List$cons,
-					A3(author$project$Main$ChatMessage, username, message, model.time),
+					A4(author$project$Main$ChatMessage, false, username, message, model.time),
 					model.chatMessages);
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -5085,15 +5086,27 @@ var author$project$Main$update = F2(
 			case 'NewChatMessage':
 				var message = msg.a;
 				var userString = function () {
-					var _n2 = A2(
+					var _n3 = A2(
 						elm$json$Json$Decode$decodeString,
 						A2(elm$json$Json$Decode$field, 'user', elm$json$Json$Decode$string),
 						message);
-					if (_n2.$ === 'Err') {
+					if (_n3.$ === 'Err') {
 						return 'INVALID_USER';
 					} else {
-						var u = _n2.a;
+						var u = _n3.a;
 						return u;
+					}
+				}();
+				var userId = function () {
+					var _n2 = A2(
+						elm$json$Json$Decode$decodeString,
+						A2(elm$json$Json$Decode$field, 'id', elm$json$Json$Decode$int),
+						message);
+					if (_n2.$ === 'Err') {
+						return false;
+					} else {
+						var i = _n2.a;
+						return (!i) ? true : false;
 					}
 				}();
 				var textString = function () {
@@ -5108,7 +5121,7 @@ var author$project$Main$update = F2(
 						return m;
 					}
 				}();
-				var fmtMessage = A3(author$project$Main$ChatMessage, userString, textString, model.time);
+				var fmtMessage = A4(author$project$Main$ChatMessage, userId, userString, textString, model.time);
 				var messages = A2(elm$core$List$cons, fmtMessage, model.chatMessages);
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -5132,7 +5145,7 @@ var author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{username: 'Guest', usernameSelected: true}),
+						{username: 'You', usernameSelected: true}),
 					author$project$Main$initGuestConnection);
 			case 'UpdateTime':
 				var newTime = msg.a;
@@ -5269,13 +5282,13 @@ var author$project$Main$printChatMessage = F3(
 					elm$core$String$fromInt(
 					A2(elm$time$Time$toSecond, myTimeZone, msg.time))
 				]));
-		var col = (msg.username === 'Host') ? 'red' : 'blue';
+		var col = msg.fromHost ? 'red' : 'blue';
 		return A2(
 			elm$html$Html$div,
 			_List_fromArray(
 				[
 					elm$html$Html$Attributes$align(
-					_Utils_eq(msg.username, myUsername) ? 'right' : 'left'),
+					_Utils_eq(msg.username, myUsername) ? 'right' : (msg.fromHost ? 'center' : 'left')),
 					A2(elm$html$Html$Attributes$style, 'word-wrap', 'normal')
 				]),
 			_List_fromArray(
@@ -5294,7 +5307,13 @@ var author$project$Main$printChatMessage = F3(
 								'<',
 								A2(elm$core$String$append, msg.username, '> ')))
 						])),
-					elm$html$Html$text(msg.text),
+					A2(
+					elm$html$Html$span,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text(msg.text)
+						])),
 					A2(
 					elm$html$Html$span,
 					_List_fromArray(
@@ -5317,8 +5336,8 @@ var author$project$Main$displayChatMessages = F3(
 				[
 					elm$html$Html$Attributes$align('center'),
 					A2(elm$html$Html$Attributes$style, 'padding-top', '5%'),
-					A2(elm$html$Html$Attributes$style, 'padding-left', '25%'),
-					A2(elm$html$Html$Attributes$style, 'width', '50%'),
+					A2(elm$html$Html$Attributes$style, 'padding-left', '20%'),
+					A2(elm$html$Html$Attributes$style, 'width', '55%'),
 					A2(elm$html$Html$Attributes$style, 'display', 'inline-block'),
 					A2(elm$html$Html$Attributes$style, 'zoom', '1'),
 					A2(elm$html$Html$Attributes$style, 'display*', 'inline')

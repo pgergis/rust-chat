@@ -28,7 +28,8 @@ main =
 -- MODEL
 
 type alias ChatMessage =
-    { username: String
+    { fromHost: Bool
+    , username: String
     , text: String
     , time: Time.Posix
     }
@@ -46,9 +47,10 @@ type alias Model =
 
 init : () -> (Model, Cmd Msg)
 init _ =
-    (Model [] "" "" False (Time.millisToPosix 0) Time.utc
-    , Cmd.batch [Task.perform UpdateTime Time.now
-                , Task.perform AdjustTimeZone Time.here]
+    ( Model [] "" "" False (Time.millisToPosix 0) Time.utc
+    , Cmd.batch [ Task.perform UpdateTime Time.now
+                , Task.perform AdjustTimeZone Time.here
+                ]
     )
 
 
@@ -73,7 +75,7 @@ update msg model =
             let
                 message = model.userMessage
                 username = model.username
-                messages = (ChatMessage username message model.time) :: model.chatMessages
+                messages = (ChatMessage False username message model.time) :: model.chatMessages
             in
                 ( { model | chatMessages = messages, userMessage = "" }
                 , Cmd.batch [submitChatMessage message
@@ -87,6 +89,9 @@ update msg model =
 
         NewChatMessage message ->
             let
+                userId = case D.decodeString (D.field "id" D.int) message of
+                             Err _ -> False
+                             Ok i -> if i == 0 then True else False
                 userString = case D.decodeString (D.field "user" D.string) message of
                                  Err _ -> "INVALID_USER"
                                  Ok u -> u
@@ -95,6 +100,7 @@ update msg model =
                                     Ok m -> m
                 fmtMessage =
                     ChatMessage
+                        userId
                         userString
                         textString
                         model.time
@@ -117,7 +123,7 @@ update msg model =
             )
 
         GuestRegister ->
-            ( { model | username = "Guest", usernameSelected = True }
+            ( { model | username = "You", usernameSelected = True }
             , initGuestConnection
             )
 
@@ -202,8 +208,8 @@ displayChatMessages : String -> Time.Zone -> List ChatMessage -> Html a
 displayChatMessages myUsername myTimeZone chatMessages =
     div [align "center"
         , style "padding-top" "5%"
-        , style "padding-left" "25%"
-        , style "width" "50%"
+        , style "padding-left" "20%"
+        , style "width" "55%"
         , style "display" "inline-block"
         , style "zoom" "1"
         , style "display*" "inline"]
@@ -230,15 +236,17 @@ submitChatMessage message =
 printChatMessage : String ->  Time.Zone -> ChatMessage -> Html msg
 printChatMessage myUsername myTimeZone msg =
     let
-        col = if msg.username == "Host" then "red" else "blue"
+        col = if msg.fromHost then "red" else "blue"
         timeString = (String.join ":" [String.fromInt (Time.toHour myTimeZone msg.time)
                                       , String.fromInt (Time.toMinute myTimeZone msg.time)
                                       , String.fromInt (Time.toSecond myTimeZone msg.time)])
     in
-        div [align (if msg.username == myUsername then "right" else "left")
+        div [align (if msg.username == myUsername then "right"
+                    else if msg.fromHost then "center"
+                    else "left")
             , style "word-wrap" "normal"]
             [ span [style "color" col] [text (String.append "<" (String.append msg.username "> "))]
-            , text msg.text
+            , span [] [text msg.text]
             , span [style "color" "green", style "font-size" "80%"] [text (String.append " " timeString)]
             ]
 
