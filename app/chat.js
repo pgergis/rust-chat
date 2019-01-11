@@ -5045,7 +5045,7 @@ var elm$json$Json$Encode$string = _Json_wrap;
 var author$project$Main$connectWs = _Platform_outgoingPort('connectWs', elm$json$Json$Encode$string);
 var author$project$Main$initGuestConnection = author$project$Main$connectWs('/guest');
 var author$project$Main$initRegisteredConnection = function (requestedUsername) {
-	return author$project$Main$connectWs('/register?req_handle=' + requestedUsername);
+	return author$project$Main$connectWs('/register?req_username=' + requestedUsername);
 };
 var author$project$Main$websocketOut = _Platform_outgoingPort('websocketOut', elm$json$Json$Encode$string);
 var author$project$Main$submitChatMessage = function (message) {

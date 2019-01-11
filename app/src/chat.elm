@@ -268,4 +268,4 @@ initGuestConnection : Cmd Msg
 initGuestConnection = connectWs "/guest"
 
 initRegisteredConnection : String -> Cmd Msg
-initRegisteredConnection requestedUsername = connectWs ("/register?req_handle=" ++ requestedUsername)
+initRegisteredConnection requestedUsername = connectWs ("/register?req_username=" ++ requestedUsername)

@@ -14,7 +14,7 @@
          // client is responsible for listening for failed connection and retrying accordingly
          app.ports.connectWs.subscribe(function(extension) {
              // extension '/guest' means guest connection
-             // extension '/register?req_handle=<username>' tries to get that username
+             // extension '/register?req_username=<username>' tries to get that username
              const wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')
                          + window.location.host
                          + extension;
