@@ -69,6 +69,7 @@ type Msg
     | GuestRegister
     | UpdateTime Time.Posix
     | AdjustTimeZone Time.Zone
+    | NoOp
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -138,6 +139,7 @@ update msg model =
         AdjustTimeZone newZone -> ( { model | timeZone = newZone }
                                   , Cmd.none)
 
+        NoOp -> (model, Cmd.none)
 
 
 -- VIEW
@@ -166,6 +168,7 @@ enterNameView model =
         , input
             [ autofocus True
             , value model.username
+            , onKeyUp (keyUpSubmit UserRegister)
             , onInput UpdateUsername
             , class "u-full-width"
             , type_ "text"
@@ -174,6 +177,7 @@ enterNameView model =
         , button
             [ onClick UserRegister
             , class "button-primary"
+            , type_ "submit"
             ]
             [ text "Register" ]
         , div [] []
@@ -193,6 +197,7 @@ chatView model =
             [ placeholder "say something..."
             , autofocus True
             , value model.userMessage
+            , onKeyUp (keyUpSubmit PostChatMessage)
             , onInput UpdateUserMessage
             , type_ "text"
             , style "margin-right" "0.5em"
@@ -201,6 +206,7 @@ chatView model =
             []
         , button
             [ onClick PostChatMessage
+            , type_ "submit"
             , class "button-primary"
             ]
             [ text "Submit" ]
@@ -241,6 +247,12 @@ subscriptions model =
 
 -- HELPERS
 
+
+onKeyUp : (Int -> msg) -> Attribute msg
+onKeyUp tagger = on "keyup" (D.map tagger keyCode)
+
+keyUpSubmit : Msg -> Int -> Msg
+keyUpSubmit action key = if key == 13 then action else NoOp
 
 submitChatMessage : String -> Cmd Msg
 submitChatMessage message =

@@ -5309,13 +5309,15 @@ var author$project$Main$update = F2(
 						model,
 						{time: newTime}),
 					elm$core$Platform$Cmd$none);
-			default:
+			case 'AdjustTimeZone':
 				var newZone = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{timeZone: newZone}),
 					elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		}
 	});
 var author$project$Main$PostChatMessage = {$: 'PostChatMessage'};
@@ -5516,6 +5518,29 @@ var author$project$Main$displayConnectedUsers = function (users) {
 			},
 			users));
 };
+var author$project$Main$NoOp = {$: 'NoOp'};
+var author$project$Main$keyDownSubmit = F2(
+	function (action, key) {
+		return (key === 13) ? action : author$project$Main$NoOp;
+	});
+var elm$html$Html$Events$keyCode = A2(elm$json$Json$Decode$field, 'keyCode', elm$json$Json$Decode$int);
+var elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			elm$virtual_dom$VirtualDom$on,
+			event,
+			elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var author$project$Main$onKeyDown = function (tagger) {
+	return A2(
+		elm$html$Html$Events$on,
+		'keyup',
+		A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$keyCode));
+};
 var elm$html$Html$button = _VirtualDom_node('button');
 var elm$html$Html$input = _VirtualDom_node('input');
 var elm$json$Json$Encode$bool = _Json_wrap;
@@ -5529,19 +5554,9 @@ var elm$html$Html$Attributes$boolProperty = F2(
 var elm$html$Html$Attributes$autofocus = elm$html$Html$Attributes$boolProperty('autofocus');
 var elm$html$Html$Attributes$class = elm$html$Html$Attributes$stringProperty('className');
 var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
+var elm$html$Html$Attributes$selected = elm$html$Html$Attributes$boolProperty('selected');
 var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
 var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
-var elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			elm$virtual_dom$VirtualDom$on,
-			event,
-			elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
 var elm$html$Html$Events$onClick = function (msg) {
 	return A2(
 		elm$html$Html$Events$on,
@@ -5589,9 +5604,12 @@ var author$project$Main$chatView = function (model) {
 				elm$html$Html$input,
 				_List_fromArray(
 					[
-						elm$html$Html$Attributes$placeholder('say something...'),
 						elm$html$Html$Attributes$autofocus(true),
+						elm$html$Html$Attributes$selected(true),
+						elm$html$Html$Attributes$placeholder('say something...'),
 						elm$html$Html$Attributes$value(model.userMessage),
+						author$project$Main$onKeyDown(
+						author$project$Main$keyDownSubmit(author$project$Main$PostChatMessage)),
 						elm$html$Html$Events$onInput(author$project$Main$UpdateUserMessage),
 						elm$html$Html$Attributes$type_('text'),
 						A2(elm$html$Html$Attributes$style, 'margin-right', '0.5em'),
@@ -5603,6 +5621,7 @@ var author$project$Main$chatView = function (model) {
 				_List_fromArray(
 					[
 						elm$html$Html$Events$onClick(author$project$Main$PostChatMessage),
+						elm$html$Html$Attributes$type_('submit'),
 						elm$html$Html$Attributes$class('button-primary')
 					]),
 				_List_fromArray(
@@ -5650,6 +5669,8 @@ var author$project$Main$enterNameView = function (model) {
 					[
 						elm$html$Html$Attributes$autofocus(true),
 						elm$html$Html$Attributes$value(model.username),
+						author$project$Main$onKeyDown(
+						author$project$Main$keyDownSubmit(author$project$Main$UserRegister)),
 						elm$html$Html$Events$onInput(author$project$Main$UpdateUsername),
 						elm$html$Html$Attributes$class('u-full-width'),
 						elm$html$Html$Attributes$type_('text')
@@ -5660,7 +5681,8 @@ var author$project$Main$enterNameView = function (model) {
 				_List_fromArray(
 					[
 						elm$html$Html$Events$onClick(author$project$Main$UserRegister),
-						elm$html$Html$Attributes$class('button-primary')
+						elm$html$Html$Attributes$class('button-primary'),
+						elm$html$Html$Attributes$type_('submit')
 					]),
 				_List_fromArray(
 					[
