@@ -84,8 +84,9 @@ update msg model =
                 messages = (ChatMessage False username message model.time) :: model.chatMessages
             in
                 ( { model | chatMessages = messages, userMessage = "" }
-                , Cmd.batch [submitChatMessage message
-                            , Task.perform UpdateTime Time.now]
+                , Cmd.batch [ submitChatMessage message
+                            , Task.perform UpdateTime Time.now
+                            ]
                 )
 
         UpdateUserMessage message ->
@@ -137,7 +138,7 @@ update msg model =
             )
 
         RecvServerResponse wasSuccess ->
-            ( { model | usernameSelected = wasSuccess }
+            ( { model | usernameSelected = wasSuccess, usernameSubmitAttempted = not wasSuccess }
             , Cmd.none
             )
 
@@ -188,11 +189,15 @@ enterNameView model =
             , type_ "submit"
             ]
             [ text "Register" ]
-        , if model.usernameSubmitAttempted then
-              span [ style "font-size" "80%"
-                   , style "color" "red"
-                   ] [text " Username is blank or already taken!"]
-          else span [] []
+        , span [ style "font-size" "80%"
+               , style "color" "red"
+               ]
+               [ if not (List.isEmpty model.chatMessages) then
+                     text " Looks like you were logged out; sign in again!"
+                 else if model.usernameSubmitAttempted then
+                          text " Username is blank or already taken!"
+                 else text ""
+               ]
         , div [] []
         , label [] [text "Or you can: "]
         , button
@@ -275,7 +280,7 @@ submitChatMessage message =
 printChatMessage : String ->  Time.Zone -> ChatMessage -> Html msg
 printChatMessage myUsername myTimeZone msg =
     let
-        col = if msg.fromHost then "red" else "blue"
+        col = if msg.fromHost then "blue" else "gray"
         timeString = (String.join ":" [ String.fromInt (Time.toHour myTimeZone msg.time)
                                       , String.fromInt (Time.toMinute myTimeZone msg.time)
                                       , String.fromInt (Time.toSecond myTimeZone msg.time)
@@ -284,10 +289,16 @@ printChatMessage myUsername myTimeZone msg =
         div [align (if msg.username == myUsername then "right"
                     else if msg.fromHost then "center"
                     else "left")
-            , style "word-wrap" "normal"]
-            [ span [style "color" col] [text ("<" ++ msg.username ++ "> ")]
-            , span [] [text msg.text]
-            , span [style "color" "green", style "font-size" "80%"] [text (" " ++ timeString)]
+            , style "word-wrap" "normal"
+            ]
+            [ span [style "color" col, style "font-size" "75%"] [text (msg.username)]
+            , div [][]
+            , div [ style "max-width" "40%"]
+                  [ span [] [text msg.text]
+                  , span [ style "color" "green"
+                         , style "font-size" "80%"
+                         ] [text (" " ++ timeString)]
+                  ]
             ]
 
 

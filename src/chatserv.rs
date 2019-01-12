@@ -144,11 +144,6 @@ impl Handler<Disconnect> for ChatServ {
     type Result = ();
 
     fn handle(&mut self, message: Disconnect, _: &mut Context<Self>) {
-        self.sessions.remove(&message.id);
-        self.usernames.remove(&message.id);
-
-        println!("Successfully disconnected!");
-
         /* only notify existing users of disconnection
          if username had been successfully initialized */
         match message.username {
@@ -163,6 +158,14 @@ impl Handler<Disconnect> for ChatServ {
             }
             _ => {}
         }
+
+        /* doing this after notifying means
+         user can see disconnection message if they log back in */
+        self.sessions.remove(&message.id);
+        self.usernames.remove(&message.id);
+
+        println!("Successfully disconnected!");
+
     }
 }
 

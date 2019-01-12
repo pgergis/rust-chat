@@ -114,8 +114,8 @@ impl Handler<chatserv::Message> for ChatSession {
 }
 
 // helper functions for client actor
-const HB_INTERVAL: Duration = Duration::from_secs(5); // keep-alive interval
-const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
+const HB_INTERVAL: Duration = Duration::from_secs(60); // keep-alive interval
+const CLIENT_TIMEOUT: Duration = Duration::from_secs(300);
 impl ChatSession {
 
     // checks that client is still active

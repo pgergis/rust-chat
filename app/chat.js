@@ -5065,6 +5065,7 @@ var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Main$submitChatMessage = function (message) {
 	return (message !== '') ? author$project$Main$websocketOut(message) : elm$core$Platform$Cmd$none;
 };
+var elm$core$Basics$not = _Basics_not;
 var elm$core$Dict$values = function (dict) {
 	return A3(
 		elm$core$Dict$foldr,
@@ -5320,7 +5321,7 @@ var author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{usernameSelected: wasSuccess}),
+						{usernameSelected: wasSuccess, usernameSubmitAttempted: !wasSuccess}),
 					elm$core$Platform$Cmd$none);
 			case 'UpdateTime':
 				var newTime = msg.a;
@@ -5458,7 +5459,7 @@ var author$project$Main$printChatMessage = F3(
 					elm$core$String$fromInt(
 					A2(elm$time$Time$toSecond, myTimeZone, msg.time))
 				]));
-		var col = msg.fromHost ? 'red' : 'blue';
+		var col = msg.fromHost ? 'blue' : 'gray';
 		return A2(
 			elm$html$Html$div,
 			_List_fromArray(
@@ -5473,29 +5474,40 @@ var author$project$Main$printChatMessage = F3(
 					elm$html$Html$span,
 					_List_fromArray(
 						[
-							A2(elm$html$Html$Attributes$style, 'color', col)
+							A2(elm$html$Html$Attributes$style, 'color', col),
+							A2(elm$html$Html$Attributes$style, 'font-size', '75%')
 						]),
 					_List_fromArray(
 						[
-							elm$html$Html$text('<' + (msg.username + '> '))
+							elm$html$Html$text(msg.username)
 						])),
+					A2(elm$html$Html$div, _List_Nil, _List_Nil),
 					A2(
-					elm$html$Html$span,
-					_List_Nil,
+					elm$html$Html$div,
 					_List_fromArray(
 						[
-							elm$html$Html$text(msg.text)
-						])),
-					A2(
-					elm$html$Html$span,
-					_List_fromArray(
-						[
-							A2(elm$html$Html$Attributes$style, 'color', 'green'),
-							A2(elm$html$Html$Attributes$style, 'font-size', '80%')
+							A2(elm$html$Html$Attributes$style, 'max-width', '40%')
 						]),
 					_List_fromArray(
 						[
-							elm$html$Html$text(' ' + timeString)
+							A2(
+							elm$html$Html$span,
+							_List_Nil,
+							_List_fromArray(
+								[
+									elm$html$Html$text(msg.text)
+								])),
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									A2(elm$html$Html$Attributes$style, 'color', 'green'),
+									A2(elm$html$Html$Attributes$style, 'font-size', '80%')
+								]),
+							_List_fromArray(
+								[
+									elm$html$Html$text(' ' + timeString)
+								]))
 						]))
 				]));
 	});
@@ -5667,6 +5679,13 @@ var author$project$Main$UpdateUsername = function (a) {
 	return {$: 'UpdateUsername', a: a};
 };
 var author$project$Main$UserRegister = {$: 'UserRegister'};
+var elm$core$List$isEmpty = function (xs) {
+	if (!xs.b) {
+		return true;
+	} else {
+		return false;
+	}
+};
 var elm$html$Html$label = _VirtualDom_node('label');
 var author$project$Main$enterNameView = function (model) {
 	return A2(
@@ -5706,7 +5725,7 @@ var author$project$Main$enterNameView = function (model) {
 					[
 						elm$html$Html$text('Register')
 					])),
-				model.usernameSubmitAttempted ? A2(
+				A2(
 				elm$html$Html$span,
 				_List_fromArray(
 					[
@@ -5715,8 +5734,8 @@ var author$project$Main$enterNameView = function (model) {
 					]),
 				_List_fromArray(
 					[
-						elm$html$Html$text(' Username is blank or already taken!')
-					])) : A2(elm$html$Html$span, _List_Nil, _List_Nil),
+						(!elm$core$List$isEmpty(model.chatMessages)) ? elm$html$Html$text(' Looks like you were logged out; sign in again!') : (model.usernameSubmitAttempted ? elm$html$Html$text(' Username is blank or already taken!') : elm$html$Html$text(''))
+					])),
 				A2(elm$html$Html$div, _List_Nil, _List_Nil),
 				A2(
 				elm$html$Html$label,
