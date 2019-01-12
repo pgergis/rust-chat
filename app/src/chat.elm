@@ -281,9 +281,12 @@ printChatMessage : String ->  Time.Zone -> ChatMessage -> Html msg
 printChatMessage myUsername myTimeZone msg =
     let
         col = if msg.fromHost then "blue" else "gray"
-        timeString = (String.join ":" [ String.fromInt (Time.toHour myTimeZone msg.time)
-                                      , String.fromInt (Time.toMinute myTimeZone msg.time)
-                                      , String.fromInt (Time.toSecond myTimeZone msg.time)
+        timeString = (String.join ":" [ String.padLeft 2 '0'
+                                            (String.fromInt (Time.toHour myTimeZone msg.time))
+                                      , String.padLeft 2 '0'
+                                            (String.fromInt (Time.toMinute myTimeZone msg.time))
+                                      , String.padLeft 2 '0'
+                                            (String.fromInt (Time.toSecond myTimeZone msg.time))
                                       ])
     in
         div [align (if msg.username == myUsername then "right"

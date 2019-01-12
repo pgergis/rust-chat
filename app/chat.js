@@ -2360,6 +2360,43 @@ function _Time_getZoneName()
 
 
 
+var _Bitwise_and = F2(function(a, b)
+{
+	return a & b;
+});
+
+var _Bitwise_or = F2(function(a, b)
+{
+	return a | b;
+});
+
+var _Bitwise_xor = F2(function(a, b)
+{
+	return a ^ b;
+});
+
+function _Bitwise_complement(a)
+{
+	return ~a;
+};
+
+var _Bitwise_shiftLeftBy = F2(function(offset, a)
+{
+	return a << offset;
+});
+
+var _Bitwise_shiftRightBy = F2(function(offset, a)
+{
+	return a >> offset;
+});
+
+var _Bitwise_shiftRightZfBy = F2(function(offset, a)
+{
+	return a >>> offset;
+});
+
+
+
 
 // HELPERS
 
@@ -5345,6 +5382,34 @@ var author$project$Main$PostChatMessage = {$: 'PostChatMessage'};
 var author$project$Main$UpdateUserMessage = function (a) {
 	return {$: 'UpdateUserMessage', a: a};
 };
+var elm$core$String$cons = _String_cons;
+var elm$core$String$fromChar = function (_char) {
+	return A2(elm$core$String$cons, _char, '');
+};
+var elm$core$String$length = _String_length;
+var elm$core$Bitwise$and = _Bitwise_and;
+var elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
+var elm$core$String$repeatHelp = F3(
+	function (n, chunk, result) {
+		return (n <= 0) ? result : A3(
+			elm$core$String$repeatHelp,
+			n >> 1,
+			_Utils_ap(chunk, chunk),
+			(!(n & 1)) ? result : _Utils_ap(result, chunk));
+	});
+var elm$core$String$repeat = F2(
+	function (n, chunk) {
+		return A3(elm$core$String$repeatHelp, n, chunk, '');
+	});
+var elm$core$String$padLeft = F3(
+	function (n, _char, string) {
+		return _Utils_ap(
+			A2(
+				elm$core$String$repeat,
+				n - elm$core$String$length(string),
+				elm$core$String$fromChar(_char)),
+			string);
+	});
 var elm$json$Json$Decode$map2 = _Json_map2;
 var elm$json$Json$Decode$succeed = _Json_succeed;
 var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
@@ -5452,12 +5517,24 @@ var author$project$Main$printChatMessage = F3(
 			':',
 			_List_fromArray(
 				[
+					A3(
+					elm$core$String$padLeft,
+					2,
+					_Utils_chr('0'),
 					elm$core$String$fromInt(
-					A2(elm$time$Time$toHour, myTimeZone, msg.time)),
+						A2(elm$time$Time$toHour, myTimeZone, msg.time))),
+					A3(
+					elm$core$String$padLeft,
+					2,
+					_Utils_chr('0'),
 					elm$core$String$fromInt(
-					A2(elm$time$Time$toMinute, myTimeZone, msg.time)),
+						A2(elm$time$Time$toMinute, myTimeZone, msg.time))),
+					A3(
+					elm$core$String$padLeft,
+					2,
+					_Utils_chr('0'),
 					elm$core$String$fromInt(
-					A2(elm$time$Time$toSecond, myTimeZone, msg.time))
+						A2(elm$time$Time$toSecond, myTimeZone, msg.time)))
 				]));
 		var col = msg.fromHost ? 'blue' : 'gray';
 		return A2(
@@ -5798,7 +5875,6 @@ var elm$core$Basics$never = function (_n0) {
 		continue never;
 	}
 };
-var elm$core$String$length = _String_length;
 var elm$core$String$slice = _String_slice;
 var elm$core$String$dropLeft = F2(
 	function (n, string) {
