@@ -21,6 +21,16 @@
              console.log("connecting to " + wsUri);
              const socket = new WebSocket(wsUri);
 
+             socket.onopen = function() {
+                 console.log("found WS server");
+                 app.ports.connectionResult.send(true);
+             }
+
+             socket.onclose = function() {
+                 console.log("disconnected by server");
+                 app.ports.connectionResult.send(false);
+             }
+
              // Listen for messages
              socket.onmessage = function(message) {
                  console.log(message.data);

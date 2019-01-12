@@ -4359,9 +4359,9 @@ function _Browser_load(url)
 var author$project$Main$AdjustTimeZone = function (a) {
 	return {$: 'AdjustTimeZone', a: a};
 };
-var author$project$Main$Model = F7(
-	function (chatMessages, userMessage, username, otherUsers, usernameSelected, time, timeZone) {
-		return {chatMessages: chatMessages, otherUsers: otherUsers, time: time, timeZone: timeZone, userMessage: userMessage, username: username, usernameSelected: usernameSelected};
+var author$project$Main$Model = F8(
+	function (chatMessages, userMessage, username, otherUsers, usernameSubmitAttempted, usernameSelected, time, timeZone) {
+		return {chatMessages: chatMessages, otherUsers: otherUsers, time: time, timeZone: timeZone, userMessage: userMessage, username: username, usernameSelected: usernameSelected, usernameSubmitAttempted: usernameSubmitAttempted};
 	});
 var author$project$Main$UpdateTime = function (a) {
 	return {$: 'UpdateTime', a: a};
@@ -5013,12 +5013,13 @@ var elm$time$Time$now = _Time_now(elm$time$Time$millisToPosix);
 var elm$time$Time$utc = A2(elm$time$Time$Zone, 0, _List_Nil);
 var author$project$Main$init = function (_n0) {
 	return _Utils_Tuple2(
-		A7(
+		A8(
 			author$project$Main$Model,
 			_List_Nil,
 			'',
 			'',
 			_List_Nil,
+			false,
 			false,
 			elm$time$Time$millisToPosix(0),
 			elm$time$Time$utc),
@@ -5032,10 +5033,21 @@ var author$project$Main$init = function (_n0) {
 var author$project$Main$NewChatMessage = function (a) {
 	return {$: 'NewChatMessage', a: a};
 };
+var author$project$Main$RecvServerResponse = function (a) {
+	return {$: 'RecvServerResponse', a: a};
+};
+var elm$json$Json$Decode$bool = _Json_decodeBool;
+var author$project$Main$connectionResult = _Platform_incomingPort('connectionResult', elm$json$Json$Decode$bool);
 var elm$json$Json$Decode$string = _Json_decodeString;
 var author$project$Main$websocketIn = _Platform_incomingPort('websocketIn', elm$json$Json$Decode$string);
+var elm$core$Platform$Sub$batch = _Platform_batch;
 var author$project$Main$subscriptions = function (model) {
-	return author$project$Main$websocketIn(author$project$Main$NewChatMessage);
+	return elm$core$Platform$Sub$batch(
+		_List_fromArray(
+			[
+				author$project$Main$websocketIn(author$project$Main$NewChatMessage),
+				author$project$Main$connectionResult(author$project$Main$RecvServerResponse)
+			]));
 };
 var author$project$Main$ChatMessage = F4(
 	function (fromHost, username, text, time) {
@@ -5048,8 +5060,10 @@ var author$project$Main$initRegisteredConnection = function (requestedUsername) 
 	return author$project$Main$connectWs('/register?req_username=' + requestedUsername);
 };
 var author$project$Main$websocketOut = _Platform_outgoingPort('websocketOut', elm$json$Json$Encode$string);
+var elm$core$Basics$neq = _Utils_notEqual;
+var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Main$submitChatMessage = function (message) {
-	return author$project$Main$websocketOut(message);
+	return (message !== '') ? author$project$Main$websocketOut(message) : elm$core$Platform$Cmd$none;
 };
 var elm$core$Dict$values = function (dict) {
 	return A3(
@@ -5061,7 +5075,6 @@ var elm$core$Dict$values = function (dict) {
 		_List_Nil,
 		dict);
 };
-var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var elm$json$Json$Decode$decodeString = _Json_runOnString;
 var elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
 var elm$core$Dict$empty = elm$core$Dict$RBEmpty_elm_builtin;
@@ -5294,7 +5307,7 @@ var author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{usernameSelected: true}),
+						{usernameSubmitAttempted: true}),
 					author$project$Main$initRegisteredConnection(model.username));
 			case 'GuestRegister':
 				return _Utils_Tuple2(
@@ -5302,6 +5315,13 @@ var author$project$Main$update = F2(
 						model,
 						{username: 'You', usernameSelected: true}),
 					author$project$Main$initGuestConnection);
+			case 'RecvServerResponse':
+				var wasSuccess = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{usernameSelected: wasSuccess}),
+					elm$core$Platform$Cmd$none);
 			case 'UpdateTime':
 				var newTime = msg.a;
 				return _Utils_Tuple2(
@@ -5519,7 +5539,7 @@ var author$project$Main$displayConnectedUsers = function (users) {
 			users));
 };
 var author$project$Main$NoOp = {$: 'NoOp'};
-var author$project$Main$keyDownSubmit = F2(
+var author$project$Main$keyUpSubmit = F2(
 	function (action, key) {
 		return (key === 13) ? action : author$project$Main$NoOp;
 	});
@@ -5535,7 +5555,7 @@ var elm$html$Html$Events$on = F2(
 			event,
 			elm$virtual_dom$VirtualDom$Normal(decoder));
 	});
-var author$project$Main$onKeyDown = function (tagger) {
+var author$project$Main$onKeyUp = function (tagger) {
 	return A2(
 		elm$html$Html$Events$on,
 		'keyup',
@@ -5554,7 +5574,6 @@ var elm$html$Html$Attributes$boolProperty = F2(
 var elm$html$Html$Attributes$autofocus = elm$html$Html$Attributes$boolProperty('autofocus');
 var elm$html$Html$Attributes$class = elm$html$Html$Attributes$stringProperty('className');
 var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
-var elm$html$Html$Attributes$selected = elm$html$Html$Attributes$boolProperty('selected');
 var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
 var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
 var elm$html$Html$Events$onClick = function (msg) {
@@ -5604,12 +5623,11 @@ var author$project$Main$chatView = function (model) {
 				elm$html$Html$input,
 				_List_fromArray(
 					[
-						elm$html$Html$Attributes$autofocus(true),
-						elm$html$Html$Attributes$selected(true),
 						elm$html$Html$Attributes$placeholder('say something...'),
+						elm$html$Html$Attributes$autofocus(true),
 						elm$html$Html$Attributes$value(model.userMessage),
-						author$project$Main$onKeyDown(
-						author$project$Main$keyDownSubmit(author$project$Main$PostChatMessage)),
+						author$project$Main$onKeyUp(
+						author$project$Main$keyUpSubmit(author$project$Main$PostChatMessage)),
 						elm$html$Html$Events$onInput(author$project$Main$UpdateUserMessage),
 						elm$html$Html$Attributes$type_('text'),
 						A2(elm$html$Html$Attributes$style, 'margin-right', '0.5em'),
@@ -5669,8 +5687,8 @@ var author$project$Main$enterNameView = function (model) {
 					[
 						elm$html$Html$Attributes$autofocus(true),
 						elm$html$Html$Attributes$value(model.username),
-						author$project$Main$onKeyDown(
-						author$project$Main$keyDownSubmit(author$project$Main$UserRegister)),
+						author$project$Main$onKeyUp(
+						author$project$Main$keyUpSubmit(author$project$Main$UserRegister)),
 						elm$html$Html$Events$onInput(author$project$Main$UpdateUsername),
 						elm$html$Html$Attributes$class('u-full-width'),
 						elm$html$Html$Attributes$type_('text')
@@ -5688,6 +5706,17 @@ var author$project$Main$enterNameView = function (model) {
 					[
 						elm$html$Html$text('Register')
 					])),
+				model.usernameSubmitAttempted ? A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						A2(elm$html$Html$Attributes$style, 'font-size', '80%'),
+						A2(elm$html$Html$Attributes$style, 'color', 'red')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text(' Username is blank or already taken!')
+					])) : A2(elm$html$Html$span, _List_Nil, _List_Nil),
 				A2(elm$html$Html$div, _List_Nil, _List_Nil),
 				A2(
 				elm$html$Html$label,

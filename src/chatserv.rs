@@ -1,4 +1,5 @@
 use std::collections::{HashMap};
+use std::io::{Error, ErrorKind};
 use rand::{self, rngs::ThreadRng, Rng};
 
 use actix::prelude::*;
@@ -34,11 +35,46 @@ impl ChatServ {
 
         username
     }
+
+    fn validate_username(&self, username: String) -> Result<String, Error>{
+        if username == String::new() {
+            return Err(Error::new(ErrorKind::Other, "Username is empty!"));
+        }
+        else if self.usernames.values().any(|u| u == &username) {
+            return Err(Error::new(ErrorKind::Other, "Username already taken!"));
+        }
+        else {
+            return Ok(username)
+        }
+    }
 }
 impl Actor for ChatServ {
     // only needs a simple context since it's not talking to WS clients
     type Context = Context<Self>;
 }
+
+// #[derive(Debug)]
+// pub enum UsernameError {
+//     EmptyUsername,
+//     UsernameTaken,
+// }
+// impl std::io::ErrorKind for UsernameError {
+//     fn description(&self) -> &str {
+//         match *self {
+//             UsernameError::EmptyUsername => "Username is empty!",
+//             UsernameError::UsernameTaken => "Username is already taken!",
+//         }
+//     }
+// }
+// impl std::fmt::Display for UsernameError {
+//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+//         match *self {
+//             UsernameError::EmptyUsername => f.write_str("EmptyUsername"),
+//             UsernameError::UsernameTaken => f.write_str("UsernameTaken"),
+//         }
+//     }
+// }
+
 
 // Message types
 
@@ -54,7 +90,7 @@ pub struct ClientMessage {
 }
 
 #[derive(Message)]
-#[rtype("Result<(usize, String), std::io::Error>")]
+#[rtype("Result<(usize, String), Error>")]
 pub struct Connect {
     pub address: Recipient<Message>,
     pub req_username: Option<String>,
@@ -69,10 +105,10 @@ pub struct Disconnect {
 // Handlers for message types
 
 impl Handler<Connect> for ChatServ {
-    type Result = Result<(usize, String), std::io::Error>;
+    type Result = Result<(usize, String), Error>;
 
     fn handle(&mut self, message: Connect, _: &mut Context<Self>)
-              -> Result<(usize, String), std::io::Error> {
+              -> Result<(usize, String), Error> {
 
         let id = self.rand_gen.gen::<usize>();
         self.sessions.insert(id, message.address);
@@ -81,19 +117,25 @@ impl Handler<Connect> for ChatServ {
             Some(s) => s,
             _ => self.gen_random_username()
         };
-        self.usernames.insert(id, username.clone());
 
-        // notify other clients that someone connected
-        let out = ClientMessage {
-            id: 0,
-            user: String::from("Host"),
-            text: format!("{} connected!", username),
-            to_users: self.usernames.clone(),
-        };
+        match self.validate_username(username) {
+            Ok(u) => {
+                self.usernames.insert(id, u.clone());
 
-        self.send_message(out, 0);
+                // notify other clients that someone connected
+                let out = ClientMessage {
+                    id: 0,
+                    user: String::from("Host"),
+                    text: format!("{} connected!", u),
+                    to_users: self.usernames.clone(),
+                };
 
-        return Ok((id, username))
+                self.send_message(out, 0);
+
+                return Ok((id, u))
+            }
+            Err(e) => return Err(e)
+        }
     }
 }
 

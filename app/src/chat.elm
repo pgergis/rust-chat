@@ -15,6 +15,7 @@ port websocketIn : (String -> msg) -> Sub msg
 port websocketOut : String -> Cmd msg
 
 port connectWs : String -> Cmd msg
+port connectionResult : (Bool -> msg) -> Sub msg
 
 main =
     Browser.element
@@ -41,6 +42,7 @@ type alias Model =
     , userMessage : String
     , username : String
     , otherUsers: List String
+    , usernameSubmitAttempted : Bool
     , usernameSelected : Bool
     , time: Time.Posix
     , timeZone: Time.Zone
@@ -49,7 +51,7 @@ type alias Model =
 
 init : () -> (Model, Cmd Msg)
 init _ =
-    ( Model [] "" "" [] False (Time.millisToPosix 0) Time.utc
+    ( Model [] "" "" [] False False (Time.millisToPosix 0) Time.utc
     , Cmd.batch [ Task.perform UpdateTime Time.now
                 , Task.perform AdjustTimeZone Time.here
                 ]
@@ -67,6 +69,7 @@ type Msg
     | UpdateUsername String
     | UserRegister
     | GuestRegister
+    | RecvServerResponse Bool
     | UpdateTime Time.Posix
     | AdjustTimeZone Time.Zone
     | NoOp
@@ -124,13 +127,18 @@ update msg model =
             )
 
         UserRegister ->
-            ( { model | usernameSelected = True }
+            ( { model | usernameSubmitAttempted = True }
             , initRegisteredConnection model.username
             )
 
         GuestRegister ->
             ( { model | username = "You", usernameSelected = True }
             , initGuestConnection
+            )
+
+        RecvServerResponse wasSuccess ->
+            ( { model | usernameSelected = wasSuccess }
+            , Cmd.none
             )
 
         UpdateTime newTime -> ( { model | time = newTime }
@@ -180,6 +188,11 @@ enterNameView model =
             , type_ "submit"
             ]
             [ text "Register" ]
+        , if model.usernameSubmitAttempted then
+              span [ style "font-size" "80%"
+                   , style "color" "red"
+                   ] [text " Username is blank or already taken!"]
+          else span [] []
         , div [] []
         , label [] [text "Or you can: "]
         , button
@@ -241,8 +254,9 @@ displayConnectedUsers users =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    websocketIn NewChatMessage
-
+    Sub.batch [ websocketIn NewChatMessage
+              , connectionResult RecvServerResponse
+              ]
 
 
 -- HELPERS
@@ -256,15 +270,16 @@ keyUpSubmit action key = if key == 13 then action else NoOp
 
 submitChatMessage : String -> Cmd Msg
 submitChatMessage message =
-    websocketOut message
+    if message /= "" then websocketOut message else Cmd.none
 
 printChatMessage : String ->  Time.Zone -> ChatMessage -> Html msg
 printChatMessage myUsername myTimeZone msg =
     let
         col = if msg.fromHost then "red" else "blue"
-        timeString = (String.join ":" [String.fromInt (Time.toHour myTimeZone msg.time)
+        timeString = (String.join ":" [ String.fromInt (Time.toHour myTimeZone msg.time)
                                       , String.fromInt (Time.toMinute myTimeZone msg.time)
-                                      , String.fromInt (Time.toSecond myTimeZone msg.time)])
+                                      , String.fromInt (Time.toSecond myTimeZone msg.time)
+                                      ])
     in
         div [align (if msg.username == myUsername then "right"
                     else if msg.fromHost then "center"

@@ -45,7 +45,10 @@ impl Actor for ChatSession {
                                 act.username = Some(new_username);
                                 println!("Connected user: {:?}", act.username);
                             }
-                            _ => ctx.stop()
+                            Err(e) => {
+                                println!("{:?}", e);
+                                ctx.stop()
+                            }
                         }
                     }
                     _ => ctx.stop()
