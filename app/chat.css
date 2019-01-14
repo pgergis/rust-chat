@@ -1,0 +1,38 @@
+html {
+    word-wrap: normal;
+}
+.chat {
+    align: center;
+    width: 55%;
+    padding-top: 5%;
+    padding-left: 20%;
+    display: inline-block;
+    zoom: 1;
+    display*: inline;
+}
+.messages {
+    max-width: 40%;
+}
+.username {
+    color: gray;
+    font-size: 75%;
+}
+.host .username {
+    color: blue;
+}
+.timestamp {
+    color: green;
+    font-size: 80%;
+}
+.others {
+    margin-left: 0;
+    margin-right: auto;
+}
+.mine {
+    margin-left: auto;
+    margin-right: 0;
+}
+.host {
+    margin-left: auto;
+    margin-right: auto;
+}

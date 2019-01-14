@@ -5435,9 +5435,7 @@ var elm$html$Html$Attributes$stringProperty = F2(
 			key,
 			elm$json$Json$Encode$string(string));
 	});
-var elm$html$Html$Attributes$align = elm$html$Html$Attributes$stringProperty('align');
-var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
-var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
+var elm$html$Html$Attributes$class = elm$html$Html$Attributes$stringProperty('className');
 var elm$core$Basics$modBy = _Basics_modBy;
 var elm$time$Time$flooredDiv = F2(
 	function (numerator, denominator) {
@@ -5536,14 +5534,12 @@ var author$project$Main$printChatMessage = F3(
 					elm$core$String$fromInt(
 						A2(elm$time$Time$toSecond, myTimeZone, msg.time)))
 				]));
-		var col = msg.fromHost ? 'blue' : 'gray';
+		var owner = msg.fromHost ? 'host' : (_Utils_eq(msg.username, myUsername) ? 'mine' : 'others');
 		return A2(
 			elm$html$Html$div,
 			_List_fromArray(
 				[
-					elm$html$Html$Attributes$align(
-					_Utils_eq(msg.username, myUsername) ? 'right' : (msg.fromHost ? 'center' : 'left')),
-					A2(elm$html$Html$Attributes$style, 'word-wrap', 'normal')
+					elm$html$Html$Attributes$class('messages ' + owner)
 				]),
 			_List_fromArray(
 				[
@@ -5551,8 +5547,7 @@ var author$project$Main$printChatMessage = F3(
 					elm$html$Html$span,
 					_List_fromArray(
 						[
-							A2(elm$html$Html$Attributes$style, 'color', col),
-							A2(elm$html$Html$Attributes$style, 'font-size', '75%')
+							elm$html$Html$Attributes$class('username')
 						]),
 					_List_fromArray(
 						[
@@ -5560,31 +5555,24 @@ var author$project$Main$printChatMessage = F3(
 						])),
 					A2(elm$html$Html$div, _List_Nil, _List_Nil),
 					A2(
-					elm$html$Html$div,
+					elm$html$Html$span,
 					_List_fromArray(
 						[
-							A2(elm$html$Html$Attributes$style, 'max-width', '40%')
+							elm$html$Html$Attributes$class('text')
 						]),
 					_List_fromArray(
 						[
-							A2(
-							elm$html$Html$span,
-							_List_Nil,
-							_List_fromArray(
-								[
-									elm$html$Html$text(msg.text)
-								])),
-							A2(
-							elm$html$Html$span,
-							_List_fromArray(
-								[
-									A2(elm$html$Html$Attributes$style, 'color', 'green'),
-									A2(elm$html$Html$Attributes$style, 'font-size', '80%')
-								]),
-							_List_fromArray(
-								[
-									elm$html$Html$text(' ' + timeString)
-								]))
+							elm$html$Html$text(msg.text)
+						])),
+					A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('timestamp')
+						]),
+					_List_fromArray(
+						[
+							elm$html$Html$text(' ' + timeString)
 						]))
 				]));
 	});
@@ -5594,13 +5582,7 @@ var author$project$Main$displayChatMessages = F3(
 			elm$html$Html$div,
 			_List_fromArray(
 				[
-					elm$html$Html$Attributes$align('center'),
-					A2(elm$html$Html$Attributes$style, 'padding-top', '5%'),
-					A2(elm$html$Html$Attributes$style, 'padding-left', '20%'),
-					A2(elm$html$Html$Attributes$style, 'width', '55%'),
-					A2(elm$html$Html$Attributes$style, 'display', 'inline-block'),
-					A2(elm$html$Html$Attributes$style, 'zoom', '1'),
-					A2(elm$html$Html$Attributes$style, 'display*', 'inline')
+					elm$html$Html$Attributes$class('chat')
 				]),
 			A2(
 				elm$core$List$map,
@@ -5612,7 +5594,7 @@ var author$project$Main$displayConnectedUsers = function (users) {
 		elm$html$Html$div,
 		_List_fromArray(
 			[
-				A2(elm$html$Html$Attributes$style, 'word-wrap', 'normal')
+				elm$html$Html$Attributes$class('connected-list')
 			]),
 		A2(
 			elm$core$List$map,
@@ -5652,6 +5634,7 @@ var author$project$Main$onKeyUp = function (tagger) {
 };
 var elm$html$Html$button = _VirtualDom_node('button');
 var elm$html$Html$input = _VirtualDom_node('input');
+var elm$html$Html$Attributes$align = elm$html$Html$Attributes$stringProperty('align');
 var elm$json$Json$Encode$bool = _Json_wrap;
 var elm$html$Html$Attributes$boolProperty = F2(
 	function (key, bool) {
@@ -5661,8 +5644,9 @@ var elm$html$Html$Attributes$boolProperty = F2(
 			elm$json$Json$Encode$bool(bool));
 	});
 var elm$html$Html$Attributes$autofocus = elm$html$Html$Attributes$boolProperty('autofocus');
-var elm$html$Html$Attributes$class = elm$html$Html$Attributes$stringProperty('className');
 var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
+var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
+var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
 var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
 var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
 var elm$html$Html$Events$onClick = function (msg) {

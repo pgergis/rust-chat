@@ -240,18 +240,12 @@ chatView model =
 
 displayChatMessages : String -> Time.Zone -> List ChatMessage -> Html a
 displayChatMessages myUsername myTimeZone chatMessages =
-    div [align "center"
-        , style "padding-top" "5%"
-        , style "padding-left" "20%"
-        , style "width" "55%"
-        , style "display" "inline-block"
-        , style "zoom" "1"
-        , style "display*" "inline"]
+    div [ class "chat" ]
         (List.map (printChatMessage myUsername myTimeZone) chatMessages)
 
 displayConnectedUsers : List String -> Html a
 displayConnectedUsers users =
-  div [ style "word-wrap" "normal" ]
+  div [ class "connected-list" ]
       (List.map (\x -> div [] [ text x ]) users)
 
 -- SUBSCRIPTIONS
@@ -280,7 +274,9 @@ submitChatMessage message =
 printChatMessage : String ->  Time.Zone -> ChatMessage -> Html msg
 printChatMessage myUsername myTimeZone msg =
     let
-        col = if msg.fromHost then "blue" else "gray"
+        owner = if msg.fromHost then "host"
+                else if msg.username == myUsername then "mine"
+                     else "others"
         timeString = (String.join ":" [ String.padLeft 2 '0'
                                             (String.fromInt (Time.toHour myTimeZone msg.time))
                                       , String.padLeft 2 '0'
@@ -289,19 +285,14 @@ printChatMessage myUsername myTimeZone msg =
                                             (String.fromInt (Time.toSecond myTimeZone msg.time))
                                       ])
     in
-        div [align (if msg.username == myUsername then "right"
-                    else if msg.fromHost then "center"
-                    else "left")
-            , style "word-wrap" "normal"
-            ]
-            [ span [style "color" col, style "font-size" "75%"] [text (msg.username)]
+        div [ class ("messages " ++ owner) ]
+            [ span [ class "username" ]
+                   [ text (msg.username) ]
             , div [][]
-            , div [ style "max-width" "40%"]
-                  [ span [] [text msg.text]
-                  , span [ style "color" "green"
-                         , style "font-size" "80%"
-                         ] [text (" " ++ timeString)]
-                  ]
+            , span [ class "text" ]
+                   [ text msg.text ]
+            , span [ class "timestamp" ]
+                   [ text (" " ++ timeString) ]
             ]
 
 
