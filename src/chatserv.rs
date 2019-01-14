@@ -53,28 +53,6 @@ impl Actor for ChatServ {
     type Context = Context<Self>;
 }
 
-// #[derive(Debug)]
-// pub enum UsernameError {
-//     EmptyUsername,
-//     UsernameTaken,
-// }
-// impl std::io::ErrorKind for UsernameError {
-//     fn description(&self) -> &str {
-//         match *self {
-//             UsernameError::EmptyUsername => "Username is empty!",
-//             UsernameError::UsernameTaken => "Username is already taken!",
-//         }
-//     }
-// }
-// impl std::fmt::Display for UsernameError {
-//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-//         match *self {
-//             UsernameError::EmptyUsername => f.write_str("EmptyUsername"),
-//             UsernameError::UsernameTaken => f.write_str("UsernameTaken"),
-//         }
-//     }
-// }
-
 
 // Message types
 
@@ -144,6 +122,8 @@ impl Handler<Disconnect> for ChatServ {
     type Result = ();
 
     fn handle(&mut self, message: Disconnect, _: &mut Context<Self>) {
+        self.usernames.remove(&message.id);
+
         /* only notify existing users of disconnection
          if username had been successfully initialized */
         match message.username {
@@ -162,7 +142,6 @@ impl Handler<Disconnect> for ChatServ {
         /* doing this after notifying means
          user can see disconnection message if they log back in */
         self.sessions.remove(&message.id);
-        self.usernames.remove(&message.id);
 
         println!("Successfully disconnected!");
 
